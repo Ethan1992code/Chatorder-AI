@@ -1,0 +1,99 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { ReplyForm } from "@/components/reply/ReplyForm";
+import { ReplyResults } from "@/components/reply/ReplyResults";
+import type { ReplyRequest, ReplyResult } from "@/types/reply";
+
+const initialForm: ReplyRequest = {
+  customerMessage: "",
+  productName: "",
+  productInfo: "",
+  platform: "Instagram",
+  customerStage: "New inquiry",
+  tone: "Friendly",
+  language: "English",
+};
+
+export default function AppPage() {
+  const [form, setForm] = useState<ReplyRequest>(initialForm);
+  const [result, setResult] = useState<ReplyResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  function updateField<K extends keyof ReplyRequest>(
+    key: K,
+    value: ReplyRequest[K],
+  ) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function fillExample(example: ReplyRequest) {
+    setForm(example);
+    setResult(null);
+    setError("");
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/generate-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not generate a reply. Please try again.");
+      }
+
+      const data = (await response.json()) as ReplyResult;
+      setResult(data);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-[#fbfdfb] text-[#17231f]">
+      <header className="border-b border-[#dce9e4] bg-white/90">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
+          <Link href="/" className="flex items-center gap-3 font-semibold">
+            <span className="grid size-9 place-items-center rounded-lg bg-[#1f6f5b] text-sm font-bold text-white">
+              CO
+            </span>
+            <span>ChatOrder AI</span>
+          </Link>
+          <Link
+            href="/"
+            className="rounded-lg border border-[#c9d8d2] bg-white px-4 py-2 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
+          >
+            Back to site
+          </Link>
+        </div>
+      </header>
+
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:gap-6 sm:px-8 sm:py-8 lg:grid-cols-[420px_minmax(0,1fr)] lg:py-10">
+        <ReplyForm
+          form={form}
+          error={error}
+          isLoading={isLoading}
+          onSubmit={handleSubmit}
+          onFillExample={fillExample}
+          onChange={updateField}
+        />
+        <ReplyResults result={result} isLoading={isLoading} />
+      </section>
+    </main>
+  );
+}
