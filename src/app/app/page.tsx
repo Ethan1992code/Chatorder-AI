@@ -2,9 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { KnowledgeBasePanel } from "@/components/reply/KnowledgeBasePanel";
 import { ReplyForm } from "@/components/reply/ReplyForm";
 import { ReplyResults } from "@/components/reply/ReplyResults";
 import type { ReplyRequest, ReplyResult } from "@/types/reply";
+
+const knowledgeStorageKey = "chatorder-ai-business-context";
 
 const initialForm: ReplyRequest = {
   customerMessage: "",
@@ -14,10 +17,24 @@ const initialForm: ReplyRequest = {
   customerStage: "New inquiry",
   tone: "Friendly",
   language: "English",
+  businessContext: "",
 };
 
+function getInitialForm(): ReplyRequest {
+  if (typeof window === "undefined") {
+    return initialForm;
+  }
+
+  return {
+    ...initialForm,
+    businessContext:
+      window.localStorage.getItem(knowledgeStorageKey) ??
+      initialForm.businessContext,
+  };
+}
+
 export default function AppPage() {
-  const [form, setForm] = useState<ReplyRequest>(initialForm);
+  const [form, setForm] = useState<ReplyRequest>(getInitialForm);
   const [result, setResult] = useState<ReplyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,8 +46,16 @@ export default function AppPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function updateBusinessContext(value: string) {
+    updateField("businessContext", value);
+    window.localStorage.setItem(knowledgeStorageKey, value);
+  }
+
   function fillExample(example: ReplyRequest) {
-    setForm(example);
+    setForm((current) => ({
+      ...example,
+      businessContext: current.businessContext,
+    }));
     setResult(null);
     setError("");
   }
@@ -84,14 +109,20 @@ export default function AppPage() {
       </header>
 
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:gap-6 sm:px-8 sm:py-8 lg:grid-cols-[420px_minmax(0,1fr)] lg:py-10">
-        <ReplyForm
-          form={form}
-          error={error}
-          isLoading={isLoading}
-          onSubmit={handleSubmit}
-          onFillExample={fillExample}
-          onChange={updateField}
-        />
+        <div className="space-y-5 sm:space-y-6">
+          <KnowledgeBasePanel
+            value={form.businessContext ?? ""}
+            onChange={updateBusinessContext}
+          />
+          <ReplyForm
+            form={form}
+            error={error}
+            isLoading={isLoading}
+            onSubmit={handleSubmit}
+            onFillExample={fillExample}
+            onChange={updateField}
+          />
+        </div>
         <ReplyResults result={result} isLoading={isLoading} />
       </section>
     </main>

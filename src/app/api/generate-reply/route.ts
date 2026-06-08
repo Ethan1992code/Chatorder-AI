@@ -44,6 +44,7 @@ const salesReplyJsonSchema = {
 
 const defaultBaseUrl = "https://api.deepseek.com";
 const defaultModel = "deepseek-v4-flash";
+const maxBusinessContextLength = 12000;
 
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -112,6 +113,10 @@ function buildReplyRequest(body: Record<string, unknown>): ReplyRequest | null {
     customerStage,
     tone,
     language,
+    businessContext: clean(body.businessContext).slice(
+      0,
+      maxBusinessContextLength,
+    ),
   };
 }
 

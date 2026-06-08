@@ -43,6 +43,7 @@ export type ReplyRequest = {
   customerStage: CustomerStage;
   tone: Tone;
   language: ReplyLanguage;
+  businessContext?: string;
 };
 
 export type ReplyResult = {
