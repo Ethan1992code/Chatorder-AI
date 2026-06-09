@@ -217,12 +217,20 @@ export default function Home() {
             Start with reply drafting today. Add deeper workflows later when
             your shop is ready.
           </p>
-          <a
-            href="mailto:hello@chatorder.ai"
-            className="mt-9 inline-flex items-center justify-center rounded-lg bg-white px-6 py-3.5 text-base font-semibold text-[#17231f] transition hover:bg-[#eef6f2]"
-          >
-            Request early access
-          </a>
+          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+            <a
+              href="mailto:hello@chatorder.ai"
+              className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3.5 text-base font-semibold text-[#17231f] transition hover:bg-[#eef6f2]"
+            >
+              Request early access
+            </a>
+            <a
+              href="mailto:hello@chatorder.ai?subject=ChatOrder%20AI%20feedback"
+              className="inline-flex items-center justify-center rounded-lg border border-[#5b746d] px-6 py-3.5 text-base font-semibold text-white transition hover:border-[#c9d8d2] hover:bg-white/10"
+            >
+              Send feedback
+            </a>
+          </div>
         </div>
       </section>
     </main>
