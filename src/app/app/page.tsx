@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { KnowledgeBasePanel } from "@/components/reply/KnowledgeBasePanel";
 import { ReplyForm } from "@/components/reply/ReplyForm";
 import { ReplyResults } from "@/components/reply/ReplyResults";
@@ -95,13 +94,9 @@ export default function AppPage() {
       <header className="border-b border-[#dce9e4] bg-white/90">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-3 font-semibold">
-            <Image
-              src="/chatorder-logo.png"
-              alt="ChatOrder AI logo"
-              width={40}
-              height={40}
-              className="size-10 rounded-lg object-cover shadow-sm"
-            />
+            <span className="grid size-9 place-items-center rounded-lg bg-[#1f6f5b] text-sm font-bold text-white">
+              CO
+            </span>
             <span>ChatOrder AI</span>
           </Link>
           <Link
