@@ -55,6 +55,12 @@ export default async function DashboardPage() {
                 Open reply generator
               </Link>
               <Link
+                href="/dashboard/email"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-[#17231f] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#274139]"
+              >
+                Send email
+              </Link>
+              <Link
                 href="/"
                 className="inline-flex h-12 items-center justify-center rounded-lg border border-[#c9d8d2] bg-white px-4 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
               >
@@ -75,8 +81,8 @@ export default async function DashboardPage() {
               body: "Keep product catalogs, shipping rules, FAQs, and brand notes close to the AI.",
             },
             {
-              title: "Account protection",
-              body: "Only logged-in users can access the workspace and reply generation API.",
+              title: "Email sending",
+              body: "Send customer follow-ups and order replies through a protected email API.",
             },
           ].map((item) => (
             <article
