@@ -211,10 +211,11 @@ export default function Home() {
       <section id="cta" className="px-5 py-20 sm:px-8">
         <div className="mx-auto max-w-5xl rounded-[28px] bg-[#17231f] px-6 py-14 text-center text-white sm:px-10">
           <h2 className="mx-auto max-w-3xl text-3xl font-semibold leading-tight sm:text-5xl">
-            Help every shop message become a better sales moment.
+            Turn every social media message into a sales opportunity.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#c9d8d2]">
-            Start with reply drafting today. Add deeper workflows later when
+            Reply faster on Facebook, Instagram, TikTok, and WhatsApp. Start
+            with AI reply drafting today, and add deeper sales workflows when
             your shop is ready.
           </p>
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
