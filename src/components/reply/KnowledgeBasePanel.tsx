@@ -7,7 +7,29 @@ type KnowledgeBasePanelProps = {
   onChange: (value: string) => void;
 };
 
-const supportedExtensions = [".txt", ".md", ".csv", ".json"];
+const textExtensions = [".txt", ".md", ".csv", ".json"];
+const supportedExtensions = [
+  ...textExtensions,
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+];
+
+type UploadedAsset = {
+  name: string;
+  type: string;
+  size: number;
+  kind: "text" | "image" | "document";
+};
 
 export function KnowledgeBasePanel({
   value,
@@ -15,6 +37,7 @@ export function KnowledgeBasePanel({
 }: KnowledgeBasePanelProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState("");
+  const [assets, setAssets] = useState<UploadedAsset[]>([]);
 
   const characterCount = value.length;
   const hasKnowledge = value.trim().length > 0;
@@ -28,33 +51,67 @@ export function KnowledgeBasePanel({
   }, [characterCount, hasKnowledge]);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) {
       return;
     }
 
-    const extension = file.name
-      .slice(file.name.lastIndexOf("."))
-      .toLowerCase();
+    const addedAssets: UploadedAsset[] = [];
+    const knowledgeParts: string[] = [];
 
-    if (!supportedExtensions.includes(extension)) {
-      setStatus("Upload a text, markdown, CSV, or JSON file for now.");
+    for (const file of files) {
+      const extension = getExtension(file.name);
+      const kind = getFileKind(file);
+
+      if (!supportedExtensions.includes(extension)) {
+        knowledgeParts.push(
+          `Skipped unsupported file: ${file.name}. Supported files include images, PDF, Word, Excel, PowerPoint, text, markdown, CSV, and JSON.`,
+        );
+        continue;
+      }
+
+      addedAssets.push({
+        name: file.name,
+        type: file.type || extension,
+        size: file.size,
+        kind,
+      });
+
+      if (kind === "text") {
+        const text = await file.text();
+        knowledgeParts.push(`Source: ${file.name}\n${text.trim()}`);
+      } else if (kind === "image") {
+        knowledgeParts.push(
+          `Uploaded image reference: ${file.name}. Add any important visual details from this image in Background Notes if the AI should use them.`,
+        );
+      } else {
+        knowledgeParts.push(
+          `Uploaded document reference: ${file.name}. Add or paste the important document details in Background Notes if the AI should use them.`,
+        );
+      }
+    }
+
+    if (knowledgeParts.length === 0) {
+      setStatus("No supported files were added.");
       event.target.value = "";
       return;
     }
 
-    const text = await file.text();
-    const nextValue = [value.trim(), `Source: ${file.name}`, text.trim()]
+    const nextValue = [value.trim(), knowledgeParts.join("\n\n")]
       .filter(Boolean)
       .join("\n\n");
 
     onChange(nextValue);
-    setStatus(`${file.name} added to knowledge base.`);
+    setAssets((current) => [...addedAssets, ...current].slice(0, 12));
+    setStatus(
+      `${addedAssets.length} file${addedAssets.length === 1 ? "" : "s"} added to knowledge base.`,
+    );
     event.target.value = "";
   }
 
   function clearKnowledge() {
     onChange("");
+    setAssets([]);
     setStatus("Knowledge base cleared.");
   }
 
@@ -64,8 +121,8 @@ export function KnowledgeBasePanel({
         <div>
           <h2 className="text-xl font-semibold">Customer Knowledge Base</h2>
           <p className="mt-2 text-sm leading-6 text-[#536962]">
-            Add product catalogs, company background, shipping rules, FAQs, or
-            brand voice notes so replies fit the customer better.
+            Add product photos, catalogs, company background, shipping rules,
+            FAQs, or brand voice notes so replies fit the customer better.
           </p>
         </div>
         <span className="rounded-lg bg-[#eaf7f0] px-3 py-2 text-sm font-semibold text-[#1f6f5b]">
@@ -78,7 +135,8 @@ export function KnowledgeBasePanel({
           <input
             ref={inputRef}
             type="file"
-            accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json"
+            multiple
+            accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.gif,text/plain,text/markdown,text/csv,application/json,application/pdf,image/png,image/jpeg,image/webp,image/gif"
             onChange={handleFileUpload}
             className="hidden"
           />
@@ -87,13 +145,37 @@ export function KnowledgeBasePanel({
             onClick={() => inputRef.current?.click()}
             className="inline-flex h-11 items-center justify-center rounded-lg bg-[#1f6f5b] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175846]"
           >
-            Upload background file
+            Upload files
           </button>
           <p className="text-sm leading-6 text-[#536962]">
-            Supports .txt, .md, .csv, and .json files.
+            Images, PDF, Word, Excel, PowerPoint, text, CSV, and JSON are
+            accepted.
           </p>
         </div>
       </div>
+
+      {assets.length > 0 && (
+        <div className="mt-4 grid gap-2">
+          {assets.map((asset, index) => (
+            <div
+              key={`${asset.name}-${index}`}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[#dce9e4] bg-[#fbfdfb] px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#17231f]">
+                  {asset.name}
+                </p>
+                <p className="text-xs text-[#536962]">
+                  {asset.kind} · {formatFileSize(asset.size)}
+                </p>
+              </div>
+              <span className="rounded-lg bg-[#eaf7f0] px-2.5 py-1 text-xs font-semibold text-[#1f6f5b]">
+                Added
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="mt-4 space-y-2">
         <label
@@ -106,7 +188,7 @@ export function KnowledgeBasePanel({
           id="businessContext"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Paste company profile, product catalog, return policy, shipping details, tone guidelines, FAQs..."
+          placeholder="Paste company profile, product catalog, return policy, shipping details, tone guidelines, FAQs, or visual notes from uploaded images..."
           className="min-h-36 w-full resize-y rounded-lg border border-[#c9d8d2] bg-white px-3.5 py-3 text-sm leading-6 outline-none transition placeholder:text-[#8a9c96] focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#1f6f5b]/10"
         />
       </div>
@@ -124,4 +206,35 @@ export function KnowledgeBasePanel({
       </div>
     </section>
   );
+}
+
+function getExtension(filename: string) {
+  const index = filename.lastIndexOf(".");
+  return index >= 0 ? filename.slice(index).toLowerCase() : "";
+}
+
+function getFileKind(file: File): UploadedAsset["kind"] {
+  const extension = getExtension(file.name);
+
+  if (file.type.startsWith("image/")) {
+    return "image";
+  }
+
+  if (textExtensions.includes(extension)) {
+    return "text";
+  }
+
+  return "document";
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${Math.round(size / 1024)} KB`;
+  }
+
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
