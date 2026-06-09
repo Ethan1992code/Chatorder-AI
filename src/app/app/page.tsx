@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { FeedbackPanel } from "@/components/reply/FeedbackPanel";
 import { KnowledgeBasePanel } from "@/components/reply/KnowledgeBasePanel";
 import { ReplyForm } from "@/components/reply/ReplyForm";
 import { ReplyResults } from "@/components/reply/ReplyResults";
@@ -114,6 +115,7 @@ export default function AppPage() {
             value={form.businessContext ?? ""}
             onChange={updateBusinessContext}
           />
+          <FeedbackPanel />
           <ReplyForm
             form={form}
             error={error}
