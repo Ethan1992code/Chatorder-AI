@@ -74,7 +74,13 @@ export default function AppPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Could not generate a reply. Please try again.");
+        const errorBody = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        throw new Error(
+          errorBody?.error ?? "Could not generate a reply. Please try again.",
+        );
       }
 
       const data = (await response.json()) as ReplyResult;

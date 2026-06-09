@@ -1,0 +1,200 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+type AuthMode = "login" | "signup";
+
+type AuthFormProps = {
+  mode: AuthMode;
+  message?: string;
+  nextPath?: string;
+};
+
+function getSafeNextPath(nextPath?: string) {
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return nextPath;
+}
+
+export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState(message ?? "");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isLogin = mode === "login";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setNotice("");
+
+    const supabase = createClient();
+
+    try {
+      if (isLogin) {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (loginError) {
+          setError(loginError.message);
+          return;
+        }
+
+        router.replace(getSafeNextPath(nextPath));
+        router.refresh();
+        return;
+      }
+
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signupError) {
+        setError(signupError.message);
+        return;
+      }
+
+      if (data.session) {
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      router.replace(
+        "/login?message=Account%20created.%20Please%20check%20your%20email%20if%20confirmation%20is%20enabled,%20then%20log%20in.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-[#fbfdfb] px-5 py-8 text-[#17231f] sm:px-8">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 font-semibold">
+          <span className="grid size-9 place-items-center rounded-lg bg-[#1f6f5b] text-sm font-bold text-white">
+            CO
+          </span>
+          <span>ChatOrder AI</span>
+        </Link>
+        <Link
+          href="/"
+          className="rounded-lg border border-[#c9d8d2] bg-white px-4 py-2 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
+        >
+          Back to site
+        </Link>
+      </div>
+
+      <section className="mx-auto grid min-h-[calc(100vh-92px)] w-full max-w-6xl items-center py-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
+        <div className="hidden lg:block">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f6f5b]">
+            ChatOrder workspace
+          </p>
+          <h1 className="mt-5 max-w-xl text-5xl font-semibold leading-tight tracking-normal">
+            Turn customer messages into replies your shop can send faster.
+          </h1>
+          <p className="mt-5 max-w-lg text-lg leading-8 text-[#536962]">
+            Save your product details, draft stronger responses, and keep every
+            sales conversation moving from one simple workspace.
+          </p>
+        </div>
+
+        <div className="mx-auto w-full max-w-md rounded-lg border border-[#dce9e4] bg-white p-6 shadow-sm sm:p-8">
+          <div>
+            <h2 className="text-3xl font-semibold">
+              {isLogin ? "Log in" : "Create account"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#536962]">
+              {isLogin
+                ? "Access your ChatOrder AI workspace."
+                : "Start a protected ChatOrder AI workspace for your shop."}
+            </p>
+          </div>
+
+          {notice && (
+            <div className="mt-5 rounded-lg border border-[#bfe1d4] bg-[#f2faf6] px-4 py-3 text-sm leading-6 text-[#1f6f5b]">
+              {notice}
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-5 rounded-lg border border-[#f1c8bd] bg-[#fff6f3] px-4 py-3 text-sm leading-6 text-[#b4442d]">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-semibold">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="h-12 w-full rounded-lg border border-[#c9d8d2] bg-white px-3.5 text-sm outline-none transition placeholder:text-[#8a9c96] focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#1f6f5b]/10"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-semibold">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-12 w-full rounded-lg border border-[#c9d8d2] bg-white px-3.5 text-sm outline-none transition placeholder:text-[#8a9c96] focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#1f6f5b]/10"
+                placeholder="At least 6 characters"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#1f6f5b] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175846] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoading
+                ? isLogin
+                  ? "Logging in..."
+                  : "Creating account..."
+                : isLogin
+                  ? "Log in"
+                  : "Sign up"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-[#536962]">
+            {isLogin ? "New to ChatOrder AI?" : "Already have an account?"}{" "}
+            <Link
+              href={isLogin ? "/signup" : "/login"}
+              className="font-semibold text-[#1f6f5b] hover:text-[#175846]"
+            >
+              {isLogin ? "Create an account" : "Log in"}
+            </Link>
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}

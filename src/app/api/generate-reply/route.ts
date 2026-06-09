@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildSalesReplyPrompt, salesReplySystemPrompt } from "@/lib/prompts";
+import { createClient } from "@/lib/supabase/server";
 import {
   customerStages,
   platforms,
@@ -121,6 +122,18 @@ function buildReplyRequest(body: Record<string, unknown>): ReplyRequest | null {
 }
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Please log in to generate a sales reply." },
+      { status: 401 },
+    );
+  }
+
   let body: Record<string, unknown>;
 
   try {
