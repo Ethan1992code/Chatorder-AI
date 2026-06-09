@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { UserNav } from "@/components/auth/UserNav";
 import { FeedbackPanel } from "@/components/reply/FeedbackPanel";
 import { KnowledgeBasePanel } from "@/components/reply/KnowledgeBasePanel";
 import { ReplyForm } from "@/components/reply/ReplyForm";
@@ -106,12 +107,7 @@ export default function AppPage() {
             </span>
             <span>ChatOrder AI</span>
           </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-[#c9d8d2] bg-white px-4 py-2 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
-          >
-            Back to site
-          </Link>
+          <UserNav />
         </div>
       </header>
 
