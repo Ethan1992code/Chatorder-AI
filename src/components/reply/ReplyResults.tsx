@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { ReplyResult } from "@/types/reply";
 
 const resultFields: Array<{
@@ -55,9 +56,13 @@ export function ReplyResults({ result, isLoading }: ReplyResultsProps) {
 
       {!isLoading && !result && (
         <div className="mt-6 rounded-lg border border-dashed border-[#bfd6cd] bg-[#f2faf6] p-6 text-center sm:p-8">
-          <div className="mx-auto grid size-12 place-items-center rounded-lg bg-white text-lg font-bold text-[#1f6f5b]">
-            CO
-          </div>
+          <Image
+            src="/chatorder-logo.png"
+            alt="ChatOrder AI logo"
+            width={48}
+            height={48}
+            className="mx-auto size-12 rounded-lg object-cover shadow-sm"
+          />
           <h3 className="mx-auto mt-4 max-w-sm text-lg font-semibold">
             Pick an example or enter a customer message to start.
           </h3>

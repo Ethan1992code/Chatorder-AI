@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const features = [
   {
     title: "Instant reply drafts",
@@ -27,9 +29,13 @@ export default function Home() {
     <main className="min-h-screen bg-[#fbfdfb] text-[#17231f]">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
         <a href="#" className="flex items-center gap-3 font-semibold">
-          <span className="grid size-9 place-items-center rounded-lg bg-[#1f6f5b] text-sm font-bold text-white">
-            CO
-          </span>
+          <Image
+            src="/chatorder-logo.png"
+            alt="ChatOrder AI logo"
+            width={40}
+            height={40}
+            className="size-10 rounded-lg object-cover shadow-sm"
+          />
           <span>ChatOrder AI</span>
         </a>
         <nav className="hidden items-center gap-8 text-sm font-medium text-[#52645e] md:flex">
