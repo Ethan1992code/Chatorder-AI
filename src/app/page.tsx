@@ -53,10 +53,10 @@ export default function Home() {
           </a>
         </nav>
         <a
-          href={salesNextStepHref}
+          href="/login"
           className="rounded-lg bg-[#17231f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#274139]"
         >
-          Request demo
+          Sign up / Log in
         </a>
       </header>
 
