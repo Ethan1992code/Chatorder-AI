@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ChatOrder AI",
   description:
-    "ChatOrder AI helps small shop owners turn social media customer messages into sales-ready replies.",
+    "ChatOrder AI helps small shops turn customer DMs into sales-ready replies that move buyers toward checkout.",
 };
 
 export default function RootLayout({
