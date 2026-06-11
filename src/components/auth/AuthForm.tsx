@@ -23,6 +23,7 @@ function getSafeNextPath(nextPath?: string) {
 
 export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -59,6 +60,11 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username.trim(),
+          },
+        },
       });
 
       if (signupError) {
@@ -136,6 +142,26 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-semibold">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  required
+                  minLength={2}
+                  maxLength={40}
+                  autoComplete="username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  className="h-12 w-full rounded-lg border border-[#c9d8d2] bg-white px-3.5 text-sm outline-none transition placeholder:text-[#8a9c96] focus:border-[#1f6f5b] focus:ring-4 focus:ring-[#1f6f5b]/10"
+                  placeholder="Your display name"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-semibold">
                 Email

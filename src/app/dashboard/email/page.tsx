@@ -14,6 +14,12 @@ export default async function EmailPage() {
     redirect("/login");
   }
 
+  const username =
+    typeof user.user_metadata?.username === "string"
+      ? user.user_metadata.username
+      : "";
+  const displayName = username || user.email;
+
   return (
     <main className="min-h-screen bg-[#fbfdfb] text-[#17231f]">
       <header className="border-b border-[#dce9e4] bg-white/90">
@@ -45,8 +51,8 @@ export default async function EmailPage() {
             Send sales emails from ChatOrder AI.
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-[#536962]">
-            Signed in as {user.email}. This module is ready for manual sending
-            now, and can later power automated follow-ups.
+            Signed in as {displayName}. This module is ready for manual
+            sending now, and can later power automated follow-ups.
           </p>
         </div>
 

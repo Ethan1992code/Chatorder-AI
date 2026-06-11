@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { ProfileSettings } from "@/components/auth/ProfileSettings";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
@@ -12,6 +13,12 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const username =
+    typeof user.user_metadata?.username === "string"
+      ? user.user_metadata.username
+      : "";
+  const displayName = username || user.email;
 
   return (
     <main className="min-h-screen bg-[#fbfdfb] text-[#17231f]">
@@ -45,8 +52,13 @@ export default async function DashboardPage() {
           <section className="rounded-lg border border-[#dce9e4] bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Current user</h2>
             <p className="mt-3 rounded-lg bg-[#f2faf6] px-4 py-3 text-sm font-semibold text-[#1f6f5b]">
-              {user.email}
+              {displayName}
             </p>
+            {username && (
+              <p className="mt-2 text-sm leading-6 text-[#536962]">
+                Signed in as {user.email}
+              </p>
+            )}
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Link
                 href="/app"
@@ -68,6 +80,13 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </section>
+        </div>
+
+        <div className="mt-6">
+          <ProfileSettings
+            email={user.email}
+            initialUsername={username}
+          />
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-3">
