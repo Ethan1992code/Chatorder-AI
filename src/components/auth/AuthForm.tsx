@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createRequestId, logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
@@ -39,19 +40,43 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
     setNotice("");
 
     const supabase = createClient();
+    const requestId = createRequestId();
+    const eventPrefix = isLogin ? "auth_login" : "auth_signup";
+
+    logger.info({
+      event: `${eventPrefix}_started`,
+      status: "started",
+      message: isLogin ? "Login started." : "Signup started.",
+      requestId,
+    });
 
     try {
       if (isLogin) {
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data, error: loginError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
         if (loginError) {
+          logger.error({
+            event: "auth_login_failed",
+            status: "error",
+            message: "Login failed.",
+            requestId,
+            providerCode: loginError.code,
+          });
           setError(loginError.message);
           return;
         }
 
+        logger.info({
+          event: "auth_login_succeeded",
+          status: "success",
+          message: "Login succeeded.",
+          requestId,
+          userId: data.user.id,
+        });
         router.replace(getSafeNextPath(nextPath));
         router.refresh();
         return;
@@ -68,9 +93,25 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
       });
 
       if (signupError) {
+        logger.error({
+          event: "auth_signup_failed",
+          status: "error",
+          message: "Signup failed.",
+          requestId,
+          providerCode: signupError.code,
+        });
         setError(signupError.message);
         return;
       }
+
+      logger.info({
+        event: "auth_signup_succeeded",
+        status: "success",
+        message: "Signup succeeded.",
+        requestId,
+        userId: data.user?.id,
+        sessionCreated: Boolean(data.session),
+      });
 
       if (data.session) {
         router.replace("/dashboard");
@@ -81,6 +122,17 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
       router.replace(
         "/login?message=Account%20created.%20Please%20check%20your%20email%20if%20confirmation%20is%20enabled,%20then%20log%20in.",
       );
+    } catch (caughtError) {
+      logger.error({
+        event: `${eventPrefix}_failed`,
+        status: "error",
+        message: isLogin
+          ? "Login failed unexpectedly."
+          : "Signup failed unexpectedly.",
+        requestId,
+        error: caughtError,
+      });
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }

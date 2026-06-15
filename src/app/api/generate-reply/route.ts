@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createRequestId, logger } from "@/lib/logger";
 import { buildSalesReplyPrompt, salesReplySystemPrompt } from "@/lib/prompts";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -121,67 +122,157 @@ function buildReplyRequest(body: Record<string, unknown>): ReplyRequest | null {
   };
 }
 
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+  requestId: string,
+) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "x-request-id": requestId },
+  });
+}
+
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const incomingRequestId = request.headers.get("x-request-id")?.trim();
+  const requestId =
+    incomingRequestId && /^[a-zA-Z0-9._:-]{1,128}$/.test(incomingRequestId)
+      ? incomingRequestId
+      : createRequestId();
+  const startedAt = Date.now();
+  let userId: string | undefined;
 
-  if (!user) {
-    return NextResponse.json(
-      { error: "Please log in to generate a sales reply." },
-      { status: 401 },
-    );
-  }
-
-  let body: Record<string, unknown>;
-
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body. Please send a valid POST JSON payload." },
-      { status: 400 },
-    );
-  }
-
-  const missingFields = getMissingFields(body);
-  if (missingFields.length > 0) {
-    return NextResponse.json(
-      {
-        error: "Missing required fields.",
-        missing_fields: missingFields,
-      },
-      { status: 400 },
-    );
-  }
-
-  const apiKey =
-    process.env.LLM_API_KEY ??
-    process.env.DEEPSEEK_API_KEY ??
-    process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "AI API key is not configured. Set LLM_API_KEY or DEEPSEEK_API_KEY on the server.",
-      },
-      { status: 500 },
-    );
-  }
-
-  const baseUrl = normalizeBaseUrl(process.env.LLM_BASE_URL ?? defaultBaseUrl);
-  const model = process.env.LLM_MODEL ?? defaultModel;
-
-  const input = buildReplyRequest(body);
-  if (!input) {
-    return NextResponse.json(
-      { error: "One or more select fields contain an unsupported value." },
-      { status: 400 },
-    );
-  }
+  logger.info({
+    event: "ai_reply_generate_started",
+    status: "started",
+    message: "AI reply generation started.",
+    requestId,
+  });
 
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "Could not verify the user session.",
+        requestId,
+        failureType: "auth_lookup_failed",
+        providerCode: authError.code,
+      });
+      return jsonResponse(
+        { error: "Could not verify your session. Please log in again." },
+        401,
+        requestId,
+      );
+    }
+
+    userId = user?.id;
+
+    if (!user) {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI reply generation requires authentication.",
+        requestId,
+        failureType: "unauthorized",
+      });
+      return jsonResponse(
+        { error: "Please log in to generate a sales reply." },
+        401,
+        requestId,
+      );
+    }
+
+    let body: Record<string, unknown>;
+
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI reply request contained invalid JSON.",
+        requestId,
+        userId,
+        failureType: "invalid_json",
+      });
+      return jsonResponse(
+        { error: "Invalid JSON body. Please send a valid POST JSON payload." },
+        400,
+        requestId,
+      );
+    }
+
+    const missingFields = getMissingFields(body);
+    if (missingFields.length > 0) {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI reply request failed validation.",
+        requestId,
+        userId,
+        failureType: "missing_fields",
+        missingFieldNames: missingFields,
+      });
+      return jsonResponse(
+        {
+          error: "Missing required fields.",
+          missing_fields: missingFields,
+        },
+        400,
+        requestId,
+      );
+    }
+
+    const apiKey =
+      process.env.LLM_API_KEY ??
+      process.env.DEEPSEEK_API_KEY ??
+      process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI provider is not configured.",
+        requestId,
+        userId,
+        failureType: "provider_not_configured",
+      });
+      return jsonResponse(
+        {
+          error:
+            "AI API key is not configured. Set LLM_API_KEY or DEEPSEEK_API_KEY on the server.",
+        },
+        500,
+        requestId,
+      );
+    }
+
+    const baseUrl = normalizeBaseUrl(process.env.LLM_BASE_URL ?? defaultBaseUrl);
+    const model = process.env.LLM_MODEL ?? defaultModel;
+
+    const input = buildReplyRequest(body);
+    if (!input) {
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI reply request contained an unsupported option.",
+        requestId,
+        userId,
+        failureType: "unsupported_option",
+      });
+      return jsonResponse(
+        { error: "One or more select fields contain an unsupported value." },
+        400,
+        requestId,
+      );
+    }
+
     const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -213,42 +304,96 @@ export async function POST(request: Request) {
           ? aiBody.error.message
           : "AI provider request failed.";
 
-      return NextResponse.json(
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI provider rejected the reply request.",
+        requestId,
+        userId,
+        failureType: "provider_rejected",
+        providerStatus: aiResponse.status,
+        model,
+        durationMs: Date.now() - startedAt,
+      });
+      return jsonResponse(
         { error: `AI provider failed to generate a reply: ${message}` },
-        { status: 500 },
+        500,
+        requestId,
       );
     }
 
     const outputText = extractChatCompletionText(aiBody);
     if (!outputText) {
-      return NextResponse.json(
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI provider returned an empty response.",
+        requestId,
+        userId,
+        failureType: "empty_provider_response",
+        model,
+        durationMs: Date.now() - startedAt,
+      });
+      return jsonResponse(
         {
           error:
             "AI provider returned an empty response. Please try again with more customer or product detail.",
         },
-        { status: 500 },
+        500,
+        requestId,
       );
     }
 
     const parsed = JSON.parse(outputText) as unknown;
     if (!isSalesReplyResponse(parsed)) {
-      return NextResponse.json(
+      logger.error({
+        event: "ai_reply_generate_failed",
+        status: "error",
+        message: "AI provider returned an unexpected response shape.",
+        requestId,
+        userId,
+        failureType: "invalid_provider_response",
+        model,
+        durationMs: Date.now() - startedAt,
+      });
+      return jsonResponse(
         {
           error:
             "AI provider returned an unexpected response shape. Please try again.",
         },
-        { status: 500 },
+        500,
+        requestId,
       );
     }
 
-    return NextResponse.json(parsed);
+    logger.info({
+      event: "ai_reply_generate_succeeded",
+      status: "success",
+      message: "AI reply generation succeeded.",
+      requestId,
+      userId,
+      model,
+      durationMs: Date.now() - startedAt,
+    });
+    return jsonResponse(parsed, 200, requestId);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown AI provider error.";
 
-    return NextResponse.json(
+    logger.error({
+      event: "ai_reply_generate_failed",
+      status: "error",
+      message: "AI reply generation failed unexpectedly.",
+      requestId,
+      userId,
+      failureType: "unexpected_error",
+      durationMs: Date.now() - startedAt,
+      error,
+    });
+    return jsonResponse(
       { error: `AI provider failed to generate a reply: ${message}` },
-      { status: 500 },
+      500,
+      requestId,
     );
   }
 }
