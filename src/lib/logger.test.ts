@@ -35,6 +35,10 @@ test("logger emits the unified fields", () => {
       timestamp: undefined,
       requestId: "request-123",
       userId: "user-123",
+      creemCustomerId: null,
+      creemSubscriptionId: null,
+      creemProductId: null,
+      errorMessage: null,
     },
   );
   assert.match(entryTimestamp(entry), /^\d{4}-\d{2}-\d{2}T/);
@@ -58,6 +62,9 @@ test("logger removes sensitive fields and normalizes errors", () => {
       password: "secret",
       token: "secret",
       apiKey: "secret",
+      cardNumber: "4242424242424242",
+      customerInput: "full user input",
+      aiReply: "full AI response",
     });
   } finally {
     console.error = originalError;
@@ -68,6 +75,9 @@ test("logger removes sensitive fields and normalizes errors", () => {
   assert.equal("password" in (entry ?? {}), false);
   assert.equal("token" in (entry ?? {}), false);
   assert.equal("apiKey" in (entry ?? {}), false);
+  assert.equal("cardNumber" in (entry ?? {}), false);
+  assert.equal("customerInput" in (entry ?? {}), false);
+  assert.equal("aiReply" in (entry ?? {}), false);
 });
 
 test("logger removes sensitive fields from nested metadata", () => {

@@ -13,10 +13,14 @@ type LogInput = {
 const sensitiveKeys = new Set([
   "apikey",
   "authorization",
+  "card",
   "cookie",
+  "cvv",
   "email",
+  "input",
   "password",
   "prompt",
+  "reply",
   "secret",
   "token",
 ]);
@@ -67,6 +71,11 @@ function buildEntry(input: LogInput) {
   );
 
   const entry: Record<string, unknown> = {
+    userId: null,
+    creemCustomerId: null,
+    creemSubscriptionId: null,
+    creemProductId: null,
+    errorMessage: null,
     ...safeFields,
     timestamp: new Date().toISOString(),
     requestId: input.requestId || createRequestId(),

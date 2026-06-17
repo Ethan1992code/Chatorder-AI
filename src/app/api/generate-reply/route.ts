@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createRequestId, logger } from "@/lib/logger";
 import { buildSalesReplyPrompt, salesReplySystemPrompt } from "@/lib/prompts";
+import {
+  confirmGenerateReply,
+  releaseGenerateReply,
+  reserveGenerateReply,
+} from "@/lib/services/ai-usage";
 import { createClient } from "@/lib/supabase/server";
 import {
   customerStages,
@@ -141,6 +146,28 @@ export async function POST(request: Request) {
       : createRequestId();
   const startedAt = Date.now();
   let userId: string | undefined;
+  let usageMonth: string | undefined;
+
+  async function releaseUsageReservation() {
+    if (!userId || !usageMonth) return;
+
+    const reservedMonth = usageMonth;
+    usageMonth = undefined;
+
+    try {
+      await releaseGenerateReply(userId, reservedMonth);
+    } catch (error) {
+      logger.error({
+        event: "ai_reply_usage_release_failed",
+        status: "error",
+        message: "Could not release the AI reply usage reservation.",
+        requestId,
+        userId,
+        usageMonth: reservedMonth,
+        error,
+      });
+    }
+  }
 
   logger.info({
     event: "ai_reply_generate_started",
@@ -273,6 +300,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const reservation = await reserveGenerateReply(user.id, requestId);
+    if (!reservation.allowed) {
+      return jsonResponse(
+        {
+          error: "Monthly generate reply limit reached.",
+          code: "MONTHLY_LIMIT_REACHED",
+        },
+        403,
+        requestId,
+      );
+    }
+    usageMonth = reservation.usageMonth;
+
     const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -315,6 +355,7 @@ export async function POST(request: Request) {
         model,
         durationMs: Date.now() - startedAt,
       });
+      await releaseUsageReservation();
       return jsonResponse(
         { error: `AI provider failed to generate a reply: ${message}` },
         500,
@@ -334,6 +375,7 @@ export async function POST(request: Request) {
         model,
         durationMs: Date.now() - startedAt,
       });
+      await releaseUsageReservation();
       return jsonResponse(
         {
           error:
@@ -356,6 +398,7 @@ export async function POST(request: Request) {
         model,
         durationMs: Date.now() - startedAt,
       });
+      await releaseUsageReservation();
       return jsonResponse(
         {
           error:
@@ -365,6 +408,9 @@ export async function POST(request: Request) {
         requestId,
       );
     }
+
+    await confirmGenerateReply(user.id, reservation.usageMonth);
+    usageMonth = undefined;
 
     logger.info({
       event: "ai_reply_generate_succeeded",
@@ -377,6 +423,7 @@ export async function POST(request: Request) {
     });
     return jsonResponse(parsed, 200, requestId);
   } catch (error) {
+    await releaseUsageReservation();
     const message =
       error instanceof Error ? error.message : "Unknown AI provider error.";
 
