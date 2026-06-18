@@ -20,8 +20,7 @@ Do not rewrite existing code unless it is required for the current task.
 
 Build an AI software product that helps users solve one clear problem.
 
-The product should be:
-
+The product should be: 
 * Simple to understand
 * Fast to test
 * Cheap to run

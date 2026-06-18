@@ -1,0 +1,90 @@
+<h2>宠物商家 AI 私信成交助手</h2>
+<p class="subtitle">核心操作页草图：商家只需粘贴聊天，AI 负责判断和回复</p>
+
+<div class="mockup">
+  <div class="mockup-header">PawCloser · AI Sales Reply</div>
+  <div class="mockup-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 18px;border-bottom:1px solid #e5e7eb">
+      <div>
+        <strong>Happy Paws Pet Store</strong>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Dog accessories · United States · USD</div>
+      </div>
+      <button class="mock-button">Edit store profile</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:18px;margin-top:20px">
+      <div style="border:1px solid #dbe2ea;border-radius:12px;padding:18px">
+        <div class="label">1 · Customer message</div>
+        <h3 style="margin-top:7px">Paste a message or full conversation</h3>
+        <div style="min-height:230px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:9px;padding:14px;color:#475569;line-height:1.6">
+          Customer: Hi, does this dog life jacket fit a 65 lb Labrador?<br><br>
+          Store: Yes, we have several sizes available.<br><br>
+          Customer: I need it before our lake trip next weekend. How fast can you ship?
+        </div>
+        <div style="display:flex;gap:10px;margin-top:13px">
+          <div style="flex:1">
+            <div class="label">Reply language</div>
+            <div style="border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin-top:5px">Auto detect · English</div>
+          </div>
+          <div style="flex:1">
+            <div class="label">Tone</div>
+            <div style="border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin-top:5px">Friendly expert</div>
+          </div>
+        </div>
+        <button class="mock-button" style="width:100%;margin-top:15px;background:#2563eb;color:white;border:none;padding:12px">Analyze & create reply</button>
+      </div>
+
+      <div style="border:1px solid #dbe2ea;border-radius:12px;padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="label">2 · AI sales analysis</div>
+          <span style="background:#dcfce7;color:#166534;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700">HIGH INTENT · 86</span>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:9px;padding:12px;margin-top:12px">
+          <strong>Why this lead matters</strong>
+          <p style="margin:6px 0 0;color:#475569">Specific breed and deadline. The main purchase barrier is delivery speed, not price.</p>
+        </div>
+
+        <div style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between">
+            <strong>Recommended reply</strong>
+            <span style="font-size:12px;color:#2563eb">Copy</span>
+          </div>
+          <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:9px;padding:13px;margin-top:7px;line-height:1.55">
+            Absolutely! For a 65 lb Labrador, our Large is usually the best fit. If you share the chest measurement, I can confirm it for you. We can ship today, and estimated delivery is 3–5 business days, so it should arrive before your lake trip. Would you like me to send the order link?
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <strong>If they do not reply</strong>
+          <div style="border-left:3px solid #f59e0b;padding:8px 11px;margin-top:7px;color:#475569">
+            Follow up in 24 hours: “Just checking whether you’d like me to reserve the Large size for your Labrador...”
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="mock-button" style="flex:1">Shorter</button>
+          <button class="mock-button" style="flex:1">More persuasive</button>
+          <button class="mock-button" style="flex:1">Translate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-core-layout" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>认可这个核心结构</h3>
+      <p>保持左右双栏：左侧输入，右侧即时输出分析与成交回复。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-core-layout" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content">
+      <h3>需要调整结构</h3>
+      <p>告诉我哪里太复杂、缺少什么，或你希望换成逐步操作。</p>
+    </div>
+  </div>
+</div>

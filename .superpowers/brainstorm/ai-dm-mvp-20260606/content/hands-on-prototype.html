@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>AI 私信成交助手 · 可操作模拟版</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+    }
+    header {
+      padding: 18px 28px;
+      background: #ffffff;
+      border-bottom: 1px solid #e6eaf0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    main {
+      padding: 24px 28px;
+      display: grid;
+      grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+      gap: 22px;
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    h2 { font-size: 16px; margin: 0 0 12px; }
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #64748b;
+      display: block;
+      margin: 12px 0 6px;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font: inherit;
+      background: #fff;
+      outline: none;
+    }
+    textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+    }
+    .secondary { background: #eef2ff; color: #3730a3; }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e6eaf0;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 35px rgba(15, 23, 42, .05);
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { font-size: 13px; color: #64748b; line-height: 1.55; margin: 8px 0 0; }
+    .result-empty {
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #64748b;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #dcfce7;
+      color: #166534;
+    }
+    .score {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .box {
+      border-radius: 13px;
+      padding: 13px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin-top: 12px;
+      line-height: 1.55;
+    }
+    .reply {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e3a8a;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .small { font-size: 12px; color: #64748b; }
+    @media (max-width: 920px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>宠物商家 AI 私信成交助手</h1>
+      <div class="small">可操作规则版 · 输出会随私信内容变化，但暂不调用真实 AI</div>
+    </div>
+    <button class="secondary" onclick="fillDemo()">填入示例</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. 商家资料</h2>
+      <div class="row">
+        <div>
+          <label>店铺名</label>
+          <input id="storeName" value="Happy Paws Pet Store">
+        </div>
+        <div>
+          <label>主营品类</label>
+          <input id="category" value="Dog accessories, dog life jackets">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>价格 / 配送</label>
+          <input id="policy" value="$39–$79, ships in 3–5 business days">
+        </div>
+        <div>
+          <label>输出语言</label>
+          <select id="language">
+            <option>English</option>
+            <option>Spanish</option>
+            <option>Portuguese</option>
+            <option>Chinese</option>
+          </select>
+        </div>
+      </div>
+
+      <label>2. 粘贴客户私信或完整聊天</label>
+      <textarea id="message">Customer: Hi, does this dog life jacket fit a 65 lb Labrador?
+
+Store: Yes, we have several sizes available.
+
+Customer: I need it before our lake trip next weekend. How fast can you ship?</textarea>
+      <p class="hint">当前版本会用简单规则识别常见场景。真实版本会接入 AI，理解更复杂的上下文。</p>
+
+      <div class="actions">
+        <button onclick="generateResult()">生成成交回复</button>
+        <button class="secondary" onclick="clearAll()">清空</button>
+      </div>
+    </section>
+
+    <section class="card" id="result">
+      <div class="result-empty">
+        <div>
+          <strong>结果会显示在这里</strong>
+          <p>点击“生成成交回复”体验第一版输出结构。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function fillDemo() {
+      document.getElementById('storeName').value = 'Happy Paws Pet Store';
+      document.getElementById('category').value = 'Dog life jackets, harnesses, travel bowls';
+      document.getElementById('policy').value = '$39–$79, ships in 3–5 business days, free returns within 14 days';
+      document.getElementById('message').value =
+`Customer: Hi, does this dog life jacket fit a 65 lb Labrador?
+
+Store: Yes, we have several sizes available.
+
+Customer: I need it before our lake trip next weekend. How fast can you ship?`;
+    }
+
+    function clearAll() {
+      document.getElementById('message').value = '';
+      document.getElementById('result').innerHTML = '<div class="result-empty"><div><strong>结果会显示在这里</strong><p>点击“生成成交回复”体验第一版输出结构。</p></div></div>';
+    }
+
+    function generateResult() {
+      const store = document.getElementById('storeName').value || 'your store';
+      const category = document.getElementById('category').value || 'pet products';
+      const policy = document.getElementById('policy').value || 'standard shipping';
+      const language = document.getElementById('language').value;
+      const msg = document.getElementById('message').value.trim();
+      if (!msg) {
+        document.getElementById('result').innerHTML = '<div class="result-empty"><div><strong>请先粘贴客户私信</strong><p>真实版本会保留你的输入，并提示缺少什么。</p></div></div>';
+        return;
+      }
+      const analysis = analyzeMessage(msg, { store, category, policy, language });
+      document.getElementById('result').innerHTML = `
+        <div class="score">
+          <div>
+            <h2 style="margin-bottom:6px">AI 分析结果</h2>
+            <div class="small">基于 ${store} 的资料和客户私信</div>
+          </div>
+          <span class="pill">${analysis.intentLabel} · ${analysis.score}/100</span>
+        </div>
+        <div class="box">
+          <strong>客户意向判断</strong>
+          <p>${analysis.reason}</p>
+        </div>
+        <div class="box reply">
+          <strong>推荐回复（${language}）</strong>
+          <p>${analysis.reply}</p>
+        </div>
+        <div class="box">
+          <strong>下一步跟进话术</strong>
+          <p>${analysis.followUp}</p>
+        </div>
+        <div class="box">
+          <strong>成交建议</strong>
+          <p>${analysis.salesTip}</p>
+        </div>
+        <div class="actions">
+          <button onclick="copyReply()">复制推荐回复</button>
+          <button class="secondary" onclick="generateResult()">重新生成</button>
+        </div>
+      `;
+      window.lastReply = analysis.reply;
+    }
+
+    function includesAny(text, words) {
+      return words.some(word => text.includes(word));
+    }
+
+    function translate(template, language) {
+      const copy = {
+        shipping: {
+          English: `Yes, we can help with that. Our usual shipping policy is: {{policy}}. If you tell me your city or zip code, I can confirm the best delivery option and send you the order link.`,
+          Spanish: `Sí, podemos ayudarte. Nuestra política de envío habitual es: {{policy}}. Si me dices tu ciudad o código postal, puedo confirmar la mejor opción de entrega y enviarte el enlace de compra.`,
+          Portuguese: `Sim, podemos ajudar. Nossa política de envio é: {{policy}}. Se você me disser sua cidade ou CEP, posso confirmar a melhor opção de entrega e enviar o link do pedido.`,
+          Chinese: `可以的，我们可以帮你确认。我们的配送政策是：{{policy}}。你发一下城市或邮编，我可以确认最快配送方式，然后把下单链接发给你。`
+        },
+        size: {
+          English: `Absolutely. To recommend the right size, could you send your dog’s breed, weight, and chest measurement? Based on that, I’ll confirm the best fit and send the correct product link.`,
+          Spanish: `Claro. Para recomendar la talla correcta, ¿puedes enviarme la raza, el peso y la medida del pecho de tu perro? Con eso confirmo la mejor opción y te envío el enlace correcto.`,
+          Portuguese: `Claro. Para recomendar o tamanho certo, você pode enviar a raça, o peso e a medida do peito do seu cão? Com isso confirmo a melhor opção e envio o link correto.`,
+          Chinese: `可以的。为了推荐合适尺码，你可以发一下狗狗品种、体重和胸围吗？我确认后把对应商品链接发给你。`
+        },
+        price: {
+          English: `The price depends on the exact model and size. Our current range is {{policy}}. Tell me your dog’s size or the product you liked, and I’ll recommend the best option without over-selling.`,
+          Spanish: `El precio depende del modelo y la talla. Nuestro rango actual es {{policy}}. Dime la talla de tu perro o el producto que te interesa y te recomiendo la mejor opción.`,
+          Portuguese: `O preço depende do modelo e tamanho. Nossa faixa atual é {{policy}}. Me diga o tamanho do seu cão ou o produto que gostou e eu recomendo a melhor opção.`,
+          Chinese: `价格会根据型号和尺码不同。我们目前的范围是：{{policy}}。你告诉我狗狗尺寸或看中的产品，我帮你推荐最合适的一款。`
+        },
+        complaint: {
+          English: `I’m sorry about that. Please send your order number and a quick photo or description of the issue. I’ll check it right away and help with a replacement, return, or the best next step.`,
+          Spanish: `Lo siento mucho. Por favor envíame tu número de pedido y una foto o breve descripción del problema. Lo reviso de inmediato y te ayudo con cambio, devolución o la mejor solución.`,
+          Portuguese: `Sinto muito por isso. Por favor envie o número do pedido e uma foto ou breve descrição do problema. Vou verificar agora e ajudar com troca, devolução ou a melhor solução.`,
+          Chinese: `抱歉给你带来不便。请发一下订单号，以及问题照片或简单描述。我马上帮你查看，并给你安排换货、退货或最合适的处理方式。`
+        },
+        generic: {
+          English: `Thanks for reaching out. We carry {{category}} and I’d be happy to help you choose the right option. Could you tell me what you’re buying it for and your dog’s breed or size?`,
+          Spanish: `Gracias por escribirnos. Vendemos {{category}} y con gusto te ayudo a elegir la opción correcta. ¿Puedes decirme para qué lo necesitas y la raza o tamaño de tu perro?`,
+          Portuguese: `Obrigado por entrar em contato. Trabalhamos com {{category}} e posso ajudar você a escolher a melhor opção. Pode me dizer para que precisa e a raça ou tamanho do seu cão?`,
+          Chinese: `谢谢咨询。我们主营 {{category}}，我可以帮你选合适的款式。你方便说一下用途，以及狗狗的品种或尺寸吗？`
+        }
+      };
+      return copy[template][language] || copy[template].English;
+    }
+
+    function analyzeMessage(message, ctx) {
+      const text = message.toLowerCase();
+      let type = 'generic';
+      if (includesAny(text, ['ship', 'shipping', 'delivery', 'arrive', 'before', 'fast', 'send', 'envío', 'entrega'])) type = 'shipping';
+      if (includesAny(text, ['size', 'fit', 'weight', 'lb', 'lbs', 'kg', 'chest', 'breed', 'large', 'small', 'medium', 'talla', 'tamanho'])) type = 'size';
+      if (includesAny(text, ['price', 'cost', 'how much', 'discount', 'coupon', '$', 'precio', 'preço'])) type = 'price';
+      if (includesAny(text, ['broken', 'refund', 'return', 'wrong', 'complaint', 'not arrived', 'cancel', 'damaged'])) type = 'complaint';
+
+      const hasUrgency = includesAny(text, ['today', 'tomorrow', 'weekend', 'urgent', 'asap', 'before', 'tonight']);
+      const hasSpecific = includesAny(text, ['lb', 'lbs', 'kg', 'labrador', 'golden', 'bulldog', 'poodle', 'order', '$']);
+      let score = 58;
+      if (type === 'shipping' || type === 'size' || type === 'price') score += 16;
+      if (hasUrgency) score += 10;
+      if (hasSpecific) score += 8;
+      if (type === 'complaint') score = 35;
+      score = Math.min(score, 94);
+
+      const intentLabel = score >= 75 ? '高意向' : score >= 55 ? '中等意向' : '低意向';
+      const reasons = {
+        shipping: `客户在问配送或到货时间，通常已经接近购买决策。当前主要障碍是“能不能及时收到”。`,
+        size: `客户在问尺码或是否适合，说明对商品有明确兴趣。下一步要收集品种、体重、胸围来降低购买风险。`,
+        price: `客户在问价格，属于有兴趣但仍在比较。回复时先给范围，再引导到具体型号，不要只报最低价。`,
+        complaint: `这更像售后或投诉，不适合强推成交。优先安抚、收集订单信息并解决问题。`,
+        generic: `客户信息还比较模糊。需要先问用途和狗狗基本信息，再推荐具体产品。`
+      };
+      const tips = {
+        shipping: `先确认城市或邮编，再给下单链接。重点强调配送时间和是否赶得上。`,
+        size: `不要直接让客户自己选码。先要胸围和体重，再给一个明确推荐。`,
+        price: `用价格区间承接问题，再根据客户需求推荐一款，避免陷入纯比价。`,
+        complaint: `先解决售后情绪。处理好以后再轻微引导复购或替换方案。`,
+        generic: `先问一个低门槛问题，让客户继续回复，别一口气发太多信息。`
+      };
+      const followUps = {
+        shipping: `如果 24 小时内未回复：Just checking if you’d like me to confirm the fastest delivery option for your area.`,
+        size: `如果 24 小时内未回复：If you send the chest measurement, I can quickly confirm the best size for your dog.`,
+        price: `如果 24 小时内未回复：I can recommend the best-value option if you tell me your dog’s size and what you’ll use it for.`,
+        complaint: `如果 6 小时内未回复：I just want to make sure this gets fixed for you. Please send the order number when you can.`,
+        generic: `如果 24 小时内未回复：Happy to help you choose. What breed or size is your dog?`
+      };
+      return {
+        score,
+        intentLabel,
+        reason: reasons[type],
+        reply: translate(type, ctx.language).replace('{{policy}}', ctx.policy).replace('{{category}}', ctx.category),
+        followUp: followUps[type],
+        salesTip: tips[type]
+      };
+    }
+
+    function copyReply() {
+      if (navigator.clipboard && window.lastReply) navigator.clipboard.writeText(window.lastReply);
+    }
+  </script>
+</body>
+</html>

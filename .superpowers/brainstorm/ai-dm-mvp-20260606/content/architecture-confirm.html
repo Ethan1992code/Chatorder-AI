@@ -1,0 +1,50 @@
+<h2>AI 私信成交助手 · 第一版设计确认</h2>
+<p class="subtitle">核心界面结构已确认。现在确认技术与数据流：真实 AI 调用走服务端，保护 API Key。</p>
+
+<div class="mockup">
+  <div class="mockup-header">System flow · MVP</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div style="border:1px solid #dbe2ea;border-radius:12px;padding:18px;background:#f8fafc">
+        <div class="label">Browser</div>
+        <h3>商家网页</h3>
+        <p>本地保存商家资料。商家粘贴客户私信，选择输出语言，点击生成。</p>
+      </div>
+      <div style="border:1px solid #bfdbfe;border-radius:12px;padding:18px;background:#eff6ff">
+        <div class="label">Server</div>
+        <h3>安全 API 层</h3>
+        <p>接收资料和聊天内容，拼接提示词，调用 OpenAI。API Key 只放在服务端。</p>
+      </div>
+      <div style="border:1px solid #bbf7d0;border-radius:12px;padding:18px;background:#f0fdf4">
+        <div class="label">AI Output</div>
+        <h3>成交回复结果</h3>
+        <p>返回意向分、判断理由、推荐回复、下一步话术、是否重点跟进。</p>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;border:1px solid #e5e7eb;border-radius:12px;padding:16px">
+      <h3>第一版范围</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;color:#475569">
+        <div>包含：单页工具、商家资料、本地保存、真实 AI、多语言回复、复制结果。</div>
+        <div>不包含：注册登录、支付、聊天历史、Facebook/Instagram/WhatsApp 自动接入。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-architecture" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>确认技术与数据流设计</h3>
+      <p>用 Next.js + 服务端 API + OpenAI，先做可试用的单页 MVP。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-architecture" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>告诉我你想改技术路线、数据保存方式，或是否要加入历史记录。</p>
+    </div>
+  </div>
+</div>
