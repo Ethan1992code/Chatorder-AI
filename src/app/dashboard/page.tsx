@@ -73,6 +73,18 @@ export default async function DashboardPage() {
                 Send email
               </Link>
               <Link
+                href="/billing"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-[#c9d8d2] bg-white px-4 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
+              >
+                Billing
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-[#c9d8d2] bg-white px-4 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
+              >
+                View plans
+              </Link>
+              <Link
                 href="/"
                 className="inline-flex h-12 items-center justify-center rounded-lg border border-[#c9d8d2] bg-white px-4 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
               >

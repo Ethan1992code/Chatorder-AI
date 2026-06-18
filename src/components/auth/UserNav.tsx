@@ -46,6 +46,12 @@ export function UserNav() {
         Dashboard
       </Link>
       <Link
+        href="/billing"
+        className="hidden rounded-lg border border-[#c9d8d2] bg-white px-4 py-2 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8] sm:inline-flex"
+      >
+        Billing
+      </Link>
+      <Link
         href="/"
         className="rounded-lg border border-[#c9d8d2] bg-white px-4 py-2 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8]"
       >
