@@ -27,7 +27,7 @@ export const POST = createPortalHandler({
     const baseUrl = config.testMode
       ? "https://test-api.creem.io"
       : "https://api.creem.io";
-    const response = await fetch(`${baseUrl}/v1/customer-portal`, {
+    const response = await fetch(`${baseUrl}/v1/customers/billing`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
