@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { uploadFileToR2 } from "@/lib/storage/r2-client";
 
 type KnowledgeBasePanelProps = {
   value: string;
@@ -29,6 +30,8 @@ type UploadedAsset = {
   type: string;
   size: number;
   kind: "text" | "image" | "document";
+  storageKey?: string;
+  publicUrl?: string | null;
 };
 
 export function KnowledgeBasePanel({
@@ -38,6 +41,7 @@ export function KnowledgeBasePanel({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState("");
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const characterCount = value.length;
   const hasKnowledge = value.trim().length > 0;
@@ -58,37 +62,66 @@ export function KnowledgeBasePanel({
 
     const addedAssets: UploadedAsset[] = [];
     const knowledgeParts: string[] = [];
+    let failedUploads = 0;
 
-    for (const file of files) {
-      const extension = getExtension(file.name);
-      const kind = getFileKind(file);
+    setIsUploading(true);
+    setStatus(
+      `Uploading ${files.length} file${files.length === 1 ? "" : "s"}...`,
+    );
 
-      if (!supportedExtensions.includes(extension)) {
-        knowledgeParts.push(
-          `Skipped unsupported file: ${file.name}. Supported files include images, PDF, Word, Excel, PowerPoint, text, markdown, CSV, and JSON.`,
-        );
-        continue;
+    try {
+      for (const file of files) {
+        const extension = getExtension(file.name);
+        const kind = getFileKind(file);
+
+        if (!supportedExtensions.includes(extension)) {
+          knowledgeParts.push(
+            `Skipped unsupported file: ${file.name}. Supported files include images, PDF, Word, Excel, PowerPoint, text, markdown, CSV, and JSON.`,
+          );
+          continue;
+        }
+
+        try {
+          const uploadResult = await uploadFileToR2(file);
+
+          addedAssets.push({
+            name: file.name,
+            type: file.type || extension,
+            size: file.size,
+            kind,
+            storageKey: uploadResult.key,
+            publicUrl: uploadResult.publicUrl,
+          });
+
+          if (kind === "text") {
+            const text = await file.text();
+            knowledgeParts.push(
+              [
+                `Source: ${file.name}`,
+                `Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}`,
+                text.trim(),
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            );
+          } else if (kind === "image") {
+            knowledgeParts.push(
+              `Uploaded image reference: ${file.name}. Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}. Add any important visual details from this image in Background Notes if the AI should use them.`,
+            );
+          } else {
+            knowledgeParts.push(
+              `Uploaded document reference: ${file.name}. Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}. Add or paste the important document details in Background Notes if the AI should use them.`,
+            );
+          }
+        } catch (uploadError) {
+          failedUploads += 1;
+          knowledgeParts.push(
+            `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : "Unknown upload error."}`,
+          );
+        }
       }
-
-      addedAssets.push({
-        name: file.name,
-        type: file.type || extension,
-        size: file.size,
-        kind,
-      });
-
-      if (kind === "text") {
-        const text = await file.text();
-        knowledgeParts.push(`Source: ${file.name}\n${text.trim()}`);
-      } else if (kind === "image") {
-        knowledgeParts.push(
-          `Uploaded image reference: ${file.name}. Add any important visual details from this image in Background Notes if the AI should use them.`,
-        );
-      } else {
-        knowledgeParts.push(
-          `Uploaded document reference: ${file.name}. Add or paste the important document details in Background Notes if the AI should use them.`,
-        );
-      }
+    } finally {
+      setIsUploading(false);
     }
 
     if (knowledgeParts.length === 0) {
@@ -104,7 +137,7 @@ export function KnowledgeBasePanel({
     onChange(nextValue);
     setAssets((current) => [...addedAssets, ...current].slice(0, 12));
     setStatus(
-      `${addedAssets.length} file${addedAssets.length === 1 ? "" : "s"} added to knowledge base.`,
+      `${addedAssets.length} file${addedAssets.length === 1 ? "" : "s"} stored in R2.${failedUploads > 0 ? ` ${failedUploads} failed.` : ""}`,
     );
     event.target.value = "";
   }
@@ -142,10 +175,11 @@ export function KnowledgeBasePanel({
           />
           <button
             type="button"
+            disabled={isUploading}
             onClick={() => inputRef.current?.click()}
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-[#1f6f5b] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175846]"
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-[#1f6f5b] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175846] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Upload files
+            {isUploading ? "Uploading..." : "Upload files"}
           </button>
           <p className="text-sm leading-6 text-[#536962]">
             Images, PDF, Word, Excel, PowerPoint, text, CSV, and JSON are
@@ -166,11 +200,16 @@ export function KnowledgeBasePanel({
                   {asset.name}
                 </p>
                 <p className="text-xs text-[#536962]">
-                  {asset.kind} · {formatFileSize(asset.size)}
+                  {asset.kind} - {formatFileSize(asset.size)}
                 </p>
+                {asset.storageKey && (
+                  <p className="truncate text-xs text-[#6d817a]">
+                    {asset.publicUrl ? asset.publicUrl : asset.storageKey}
+                  </p>
+                )}
               </div>
               <span className="rounded-lg bg-[#eaf7f0] px-2.5 py-1 text-xs font-semibold text-[#1f6f5b]">
-                Added
+                Stored in R2
               </span>
             </div>
           ))}
