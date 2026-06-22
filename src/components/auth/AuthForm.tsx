@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { createRequestId, logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 
@@ -24,20 +25,39 @@ function getSafeNextPath(nextPath?: string) {
 
 export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
   const router = useRouter();
+  const turnstileSiteKey =
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(message ?? "");
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const isLogin = mode === "login";
+  const clearCaptchaToken = useCallback(() => setCaptchaToken(""), []);
+  const handleCaptchaVerified = useCallback((token: string) => {
+    setCaptchaToken(token);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
     setError("");
     setNotice("");
+
+    if (!turnstileSiteKey) {
+      setError("Human verification is not configured.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Please complete the human verification.");
+      setIsLoading(false);
+      return;
+    }
 
     const supabase = createClient();
     const requestId = createRequestId();
@@ -56,6 +76,9 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
           await supabase.auth.signInWithPassword({
             email,
             password,
+            options: {
+              captchaToken,
+            },
           });
 
         if (loginError) {
@@ -66,6 +89,7 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
             requestId,
             providerCode: loginError.code,
           });
+          clearCaptchaToken();
           setError(loginError.message);
           return;
         }
@@ -86,6 +110,7 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
         email,
         password,
         options: {
+          captchaToken,
           data: {
             username: username.trim(),
           },
@@ -100,6 +125,7 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
           requestId,
           providerCode: signupError.code,
         });
+        clearCaptchaToken();
         setError(signupError.message);
         return;
       }
@@ -132,6 +158,7 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
         requestId,
         error: caughtError,
       });
+      clearCaptchaToken();
       setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -247,9 +274,16 @@ export function AuthForm({ mode, message, nextPath }: AuthFormProps) {
               />
             </div>
 
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              onVerify={handleCaptchaVerified}
+              onExpire={clearCaptchaToken}
+              onError={clearCaptchaToken}
+            />
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !captchaToken}
               className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#1f6f5b] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175846] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isLoading
