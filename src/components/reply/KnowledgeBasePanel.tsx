@@ -62,8 +62,9 @@ export function KnowledgeBasePanel({
     }
 
     const addedAssets: UploadedAsset[] = [];
-    const knowledgeParts: string[] = [];
     let failedUploads = 0;
+    let savedRagChunks = 0;
+    let skippedFiles = 0;
 
     setIsUploading(true);
     setStatus(
@@ -76,9 +77,7 @@ export function KnowledgeBasePanel({
         const kind = getFileKind(file);
 
         if (!supportedExtensions.includes(extension)) {
-          knowledgeParts.push(
-            `Skipped unsupported file: ${file.name}. Supported files include images, PDF, Word, Excel, PowerPoint, text, markdown, CSV, and JSON.`,
-          );
+          skippedFiles += 1;
           continue;
         }
 
@@ -104,50 +103,34 @@ export function KnowledgeBasePanel({
               contentType: file.type || extension,
             });
 
-            knowledgeParts.push(
-              [
-                `Source: ${file.name}`,
-                `Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}`,
-                `Saved to RAG knowledge base: ${savedDocument.chunkCount ?? 0} chunks`,
-                text.trim(),
-              ]
-                .filter(Boolean)
-                .join("\n"),
-            );
-          } else if (kind === "image") {
-            knowledgeParts.push(
-              `Uploaded image reference: ${file.name}. Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}. Add any important visual details from this image in Background Notes if the AI should use them.`,
-            );
-          } else {
-            knowledgeParts.push(
-              `Uploaded document reference: ${file.name}. Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}. Add or paste the important document details in Background Notes if the AI should use them.`,
-            );
+            savedRagChunks += savedDocument.chunkCount ?? 0;
           }
-        } catch (uploadError) {
+        } catch {
           failedUploads += 1;
-          knowledgeParts.push(
-            `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : "Unknown upload error."}`,
-          );
         }
       }
     } finally {
       setIsUploading(false);
     }
 
-    if (knowledgeParts.length === 0) {
+    if (addedAssets.length === 0) {
       setStatus("No supported files were added.");
       event.target.value = "";
       return;
     }
-
-    const nextValue = [value.trim(), knowledgeParts.join("\n\n")]
-      .filter(Boolean)
-      .join("\n\n");
-
-    onChange(nextValue);
+    
     setAssets((current) => [...addedAssets, ...current].slice(0, 12));
     setStatus(
-      `${addedAssets.length} file${addedAssets.length === 1 ? "" : "s"} stored in R2.${failedUploads > 0 ? ` ${failedUploads} failed.` : ""}`,
+      [
+        `${addedAssets.length} file${addedAssets.length === 1 ? "" : "s"} stored in R2.`,
+        savedRagChunks > 0
+          ? `${savedRagChunks} RAG chunk${savedRagChunks === 1 ? "" : "s"} saved.`
+          : "",
+        skippedFiles > 0 ? `${skippedFiles} unsupported skipped.` : "",
+        failedUploads > 0 ? `${failedUploads} failed.` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
     );
     event.target.value = "";
   }
