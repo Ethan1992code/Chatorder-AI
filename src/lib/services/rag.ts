@@ -5,7 +5,7 @@ const MAX_DOCUMENT_TEXT_LENGTH = 60_000;
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 160;
 const MAX_CHUNKS_PER_DOCUMENT = 40;
-const DEFAULT_MATCH_LIMIT = 3;
+const DEFAULT_MATCH_LIMIT = 6;
 
 export type KnowledgeDocumentInput = {
   title: string;
@@ -93,7 +93,7 @@ export function formatRagContext(matches: KnowledgeChunkMatch[]) {
   if (matches.length === 0) return "";
 
   return [
-    "Retrieved knowledge from your saved knowledge base:",
+    "Retrieved knowledge from your saved knowledge base. Treat these as authoritative product facts. If these facts answer the customer question, include the exact value in the reply:",
     ...matches.map(
       (match, index) =>
         `[${index + 1}] ${match.title}\n${match.content.trim()}`,

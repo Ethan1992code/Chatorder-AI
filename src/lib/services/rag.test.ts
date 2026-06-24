@@ -39,6 +39,7 @@ test("RAG formats retrieved chunks for the prompt", () => {
   ]);
 
   assert.match(context, /Retrieved knowledge/);
+  assert.match(context, /authoritative product facts/);
   assert.match(context, /Shipping FAQ/);
   assert.match(context, /Canada/);
 });
@@ -98,4 +99,9 @@ test("RAG service saves documents and retrieves matches", async () => {
   assert.equal(saved.chunkCount, 1);
   assert.equal(retrieved.matches.length, 1);
   assert.equal(calls.at(-1)?.rpc, "match_knowledge_chunks");
+  assert.deepEqual(calls.at(-1)?.input, {
+    p_user_id: "user-1",
+    p_query: "warranty",
+    p_limit: 6,
+  });
 });
