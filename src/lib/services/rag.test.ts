@@ -102,6 +102,6 @@ test("RAG service saves documents and retrieves matches", async () => {
   assert.deepEqual(calls.at(-1)?.input, {
     p_user_id: "user-1",
     p_query: "warranty",
-    p_limit: 6,
+    p_limit: 8,
   });
 });

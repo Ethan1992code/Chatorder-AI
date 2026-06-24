@@ -35,3 +35,11 @@ test("generate reply retrieves saved RAG context before building the AI prompt",
   assert.ok(retrievalIndex >= 0);
   assert.ok(promptIndex > retrievalIndex);
 });
+
+test("generate reply returns short knowledge source snippets for debugging", () => {
+  const source = readFileSync(routePath, "utf8");
+
+  assert.match(source, /function buildKnowledgeSources/);
+  assert.match(source, /knowledge_sources/);
+  assert.match(source, /slice\(0, 360\)/);
+});

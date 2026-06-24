@@ -83,6 +83,15 @@ function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.replace(/\/$/, "");
 }
 
+function buildKnowledgeSources(
+  matches: Array<{ title: string; content: string }>,
+) {
+  return matches.map((match) => ({
+    title: match.title,
+    snippet: match.content.replace(/\s+/g, " ").trim().slice(0, 360),
+  }));
+}
+
 function extractChatCompletionText(responseBody: unknown) {
   const choices = (responseBody as { choices?: unknown }).choices;
   if (!Array.isArray(choices) || choices.length === 0) {
@@ -444,7 +453,14 @@ export async function POST(request: Request) {
       model,
       durationMs: Date.now() - startedAt,
     });
-    return jsonResponse(parsed, 200, requestId);
+    return jsonResponse(
+      {
+        ...parsed,
+        knowledge_sources: buildKnowledgeSources(ragResult.matches),
+      },
+      200,
+      requestId,
+    );
   } catch (error) {
     await releaseUsageReservation();
     const message =

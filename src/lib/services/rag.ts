@@ -5,7 +5,7 @@ const MAX_DOCUMENT_TEXT_LENGTH = 60_000;
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 160;
 const MAX_CHUNKS_PER_DOCUMENT = 40;
-const DEFAULT_MATCH_LIMIT = 6;
+const DEFAULT_MATCH_LIMIT = 8;
 
 export type KnowledgeDocumentInput = {
   title: string;

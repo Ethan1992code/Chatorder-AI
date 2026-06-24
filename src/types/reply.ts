@@ -54,4 +54,10 @@ export type ReplyResult = {
   strong_closing_reply: string;
   follow_up_message: string;
   sales_strategy: string;
+  knowledge_sources?: ReplyKnowledgeSource[];
+};
+
+export type ReplyKnowledgeSource = {
+  title: string;
+  snippet: string;
 };

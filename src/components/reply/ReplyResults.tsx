@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { ReplyResult } from "@/types/reply";
 
+type ReplyTextField = Exclude<keyof ReplyResult, "knowledge_sources">;
+
 const resultFields: Array<{
-  key: keyof ReplyResult;
+  key: ReplyTextField;
   title: string;
   copyable?: boolean;
   accent?: "green" | "coral";
@@ -97,6 +99,32 @@ export function ReplyResults({ result, isLoading }: ReplyResultsProps) {
               </div>
             </article>
           ))}
+
+          {result.knowledge_sources && result.knowledge_sources.length > 0 && (
+            <article className="rounded-lg border border-[#dce9e4] bg-[#f8fcfa] p-5 shadow-sm">
+              <h3 className="text-lg font-semibold">Knowledge used</h3>
+              <p className="mt-2 text-sm leading-6 text-[#536962]">
+                These are the saved knowledge snippets retrieved for this
+                reply. If the exact battery life is not shown here, the AI did
+                not receive that detail.
+              </p>
+              <div className="mt-4 grid gap-3">
+                {result.knowledge_sources.map((source, index) => (
+                  <div
+                    key={`${source.title}-${index}`}
+                    className="rounded-lg border border-[#dce9e4] bg-white p-4"
+                  >
+                    <p className="text-sm font-semibold text-[#17231f]">
+                      {source.title}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#536962]">
+                      {source.snippet}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
         </div>
       )}
     </section>
