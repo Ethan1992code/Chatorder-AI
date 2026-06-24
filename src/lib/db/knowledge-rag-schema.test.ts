@@ -26,3 +26,18 @@ test("knowledge RAG migration defines user-scoped retrieval", () => {
   assert.match(sql, /alter table public\.knowledge_documents enable row level security/i);
   assert.match(sql, /auth\.uid\(\) = user_id/i);
 });
+
+test("knowledge RAG relaxed matching migration uses OR terms and fallback", () => {
+  const sql = readFileSync(
+    new URL(
+      "../../../supabase/migrations/202606240002_relax_knowledge_rag_matching.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(sql, /string_agg\(term, ' \| '\)/i);
+  assert.match(sql, /to_tsquery\('simple'/i);
+  assert.match(sql, /fallback as/i);
+  assert.match(sql, /not exists \(select 1 from matched\)/i);
+});
