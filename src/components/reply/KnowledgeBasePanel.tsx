@@ -272,35 +272,39 @@ export function KnowledgeBasePanel({
           {assets.map((asset, index) => (
             <div
               key={`${asset.name}-${index}`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-[#dce9e4] bg-[#fbfdfb] px-3 py-2"
+              className="rounded-lg border border-[#dce9e4] bg-[#fbfdfb] px-3 py-2"
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#17231f]">
-                  {asset.name}
-                </p>
-                <p className="text-xs text-[#536962]">
-                  {asset.kind}
-                  {typeof asset.size === "number"
-                    ? ` - ${formatFileSize(asset.size)}`
-                    : " - saved"}
-                </p>
-                {asset.storageKey && (
-                  <p className="truncate text-xs text-[#6d817a]">
-                    {asset.publicUrl ? asset.publicUrl : asset.storageKey}
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#17231f]">
+                    {asset.name}
                   </p>
+                  <p className="text-xs text-[#536962]">
+                    {asset.kind}
+                    {typeof asset.size === "number"
+                      ? ` - ${formatFileSize(asset.size)}`
+                      : " - saved"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={deletingAssetId === asset.id}
+                  onClick={() => deleteAsset(asset)}
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#ffd6cc] bg-white px-2.5 text-xs font-semibold text-[#b84e37] transition hover:bg-[#fff2ed] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingAssetId === asset.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="rounded-lg bg-[#eaf7f0] px-2.5 py-1 text-xs font-semibold text-[#1f6f5b]">
+                  Saved
+                </span>
+                {asset.storageKey && (
+                  <span className="truncate text-xs text-[#6d817a]">
+                    R2 file stored
+                  </span>
                 )}
               </div>
-              <span className="rounded-lg bg-[#eaf7f0] px-2.5 py-1 text-xs font-semibold text-[#1f6f5b]">
-                Stored in R2
-              </span>
-              <button
-                type="button"
-                disabled={deletingAssetId === asset.id}
-                onClick={() => deleteAsset(asset)}
-                className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#ffd6cc] bg-white px-2.5 text-xs font-semibold text-[#b84e37] transition hover:bg-[#fff2ed] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deletingAssetId === asset.id ? "Deleting..." : "Delete"}
-              </button>
             </div>
           ))}
         </div>

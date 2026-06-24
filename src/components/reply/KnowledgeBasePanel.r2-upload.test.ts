@@ -12,7 +12,7 @@ test("knowledge base uploads supported files to R2 before adding them locally", 
   assert.match(source, /uploadFileToR2/);
   assert.match(source, /extractPdfTextFromClient/);
   assert.match(source, /saveKnowledgeDocumentFromClient/);
-  assert.match(source, /Stored in R2/);
+  assert.match(source, /R2 file stored/);
   assert.match(source, /RAG chunk/);
   assert.match(source, /isUploading/);
 });
