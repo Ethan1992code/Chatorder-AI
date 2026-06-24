@@ -1,7 +1,10 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
-import { saveKnowledgeDocumentFromClient } from "@/lib/knowledge/client";
+import {
+  extractPdfTextFromClient,
+  saveKnowledgeDocumentFromClient,
+} from "@/lib/knowledge/client";
 import { uploadFileToR2 } from "@/lib/storage/r2-client";
 
 type KnowledgeBasePanelProps = {
@@ -93,8 +96,17 @@ export function KnowledgeBasePanel({
             publicUrl: uploadResult.publicUrl,
           });
 
-          if (kind === "text") {
-            const text = await file.text();
+          if (kind === "text" || extension === ".pdf") {
+            const text =
+              extension === ".pdf"
+                ? (await extractPdfTextFromClient(file)).text
+                : await file.text();
+
+            if (!text.trim()) {
+              failedUploads += 1;
+              continue;
+            }
+
             const savedDocument = await saveKnowledgeDocumentFromClient({
               title: file.name,
               content: text,

@@ -11,3 +11,10 @@ test("knowledge client saves text documents through the server API", () => {
   assert.match(source, /method:\s*"POST"/);
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+test("knowledge client extracts PDF text through the server API", () => {
+  const source = readFileSync(clientPath, "utf8");
+
+  assert.match(source, /\/api\/knowledge\/extract-pdf/);
+  assert.match(source, /FormData/);
+});
