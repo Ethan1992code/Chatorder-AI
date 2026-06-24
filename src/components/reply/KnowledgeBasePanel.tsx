@@ -1,8 +1,9 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   extractPdfTextFromClient,
+  listKnowledgeDocumentsFromClient,
   saveKnowledgeDocumentFromClient,
 } from "@/lib/knowledge/client";
 import { uploadFileToR2 } from "@/lib/storage/r2-client";
@@ -32,7 +33,7 @@ const supportedExtensions = [
 type UploadedAsset = {
   name: string;
   type: string;
-  size: number;
+  size?: number;
   kind: "text" | "image" | "document";
   storageKey?: string;
   publicUrl?: string | null;
@@ -48,15 +49,57 @@ export function KnowledgeBasePanel({
   const [isUploading, setIsUploading] = useState(false);
 
   const characterCount = value.length;
-  const hasKnowledge = value.trim().length > 0;
+  const hasNotes = value.trim().length > 0;
+  const hasSavedAssets = assets.length > 0;
 
   const summary = useMemo(() => {
-    if (!hasKnowledge) {
+    if (!hasNotes && !hasSavedAssets) {
       return "No background added yet";
     }
 
+    if (!hasNotes && hasSavedAssets) {
+      return `${assets.length} file${assets.length === 1 ? "" : "s"} saved`;
+    }
+
     return `${characterCount.toLocaleString()} characters saved locally`;
-  }, [characterCount, hasKnowledge]);
+  }, [assets.length, characterCount, hasNotes, hasSavedAssets]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadSavedDocuments() {
+      try {
+        const documents = await listKnowledgeDocumentsFromClient();
+
+        if (!isActive || documents.length === 0) return;
+
+        setAssets(
+          documents.map((document) => ({
+            name: document.title,
+            type: document.contentType ?? "",
+            kind: getAssetKind(document.title, document.contentType),
+            storageKey: document.sourceKey ?? undefined,
+            publicUrl: document.sourceUrl,
+          })),
+        );
+        setStatus(
+          `${documents.length} saved knowledge file${
+            documents.length === 1 ? "" : "s"
+          } loaded.`,
+        );
+      } catch {
+        if (isActive) {
+          setStatus("Could not load saved knowledge files.");
+        }
+      }
+    }
+
+    loadSavedDocuments();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -150,8 +193,7 @@ export function KnowledgeBasePanel({
 
   function clearKnowledge() {
     onChange("");
-    setAssets([]);
-    setStatus("Knowledge base cleared.");
+    setStatus("Background notes cleared. Uploaded knowledge files remain saved.");
   }
 
   return (
@@ -206,7 +248,10 @@ export function KnowledgeBasePanel({
                   {asset.name}
                 </p>
                 <p className="text-xs text-[#536962]">
-                  {asset.kind} - {formatFileSize(asset.size)}
+                  {asset.kind}
+                  {typeof asset.size === "number"
+                    ? ` - ${formatFileSize(asset.size)}`
+                    : " - saved"}
                 </p>
                 {asset.storageKey && (
                   <p className="truncate text-xs text-[#6d817a]">
@@ -242,7 +287,7 @@ export function KnowledgeBasePanel({
         <p className="min-h-5 text-sm text-[#536962]">{status}</p>
         <button
           type="button"
-          disabled={!hasKnowledge}
+          disabled={!hasNotes}
           onClick={clearKnowledge}
           className="inline-flex h-10 items-center justify-center rounded-lg border border-[#c9d8d2] bg-white px-4 text-sm font-semibold text-[#1f342d] transition hover:border-[#93b6a8] disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -262,6 +307,23 @@ function getFileKind(file: File): UploadedAsset["kind"] {
   const extension = getExtension(file.name);
 
   if (file.type.startsWith("image/")) {
+    return "image";
+  }
+
+  if (textExtensions.includes(extension)) {
+    return "text";
+  }
+
+  return "document";
+}
+
+function getAssetKind(
+  filename: string,
+  contentType?: string | null,
+): UploadedAsset["kind"] {
+  const extension = getExtension(filename);
+
+  if (contentType?.startsWith("image/")) {
     return "image";
   }
 

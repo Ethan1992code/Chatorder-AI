@@ -13,6 +13,50 @@ type KnowledgeDocumentRequest = {
   contentType?: unknown;
 };
 
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("knowledge_documents")
+    .select("id, title, source_key, source_url, content_type, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    logger.error({
+      event: "rag_knowledge_list_api_failed",
+      status: "error",
+      message: "Could not list knowledge documents from the API.",
+      userId: user.id,
+      error,
+    });
+
+    return NextResponse.json(
+      { error: "Could not load knowledge documents." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({
+    documents: (data ?? []).map((document) => ({
+      id: document.id,
+      title: document.title,
+      sourceKey: document.source_key,
+      sourceUrl: document.source_url,
+      contentType: document.content_type,
+      createdAt: document.created_at,
+    })),
+  });
+}
+
 export async function POST(request: Request) {
   const requestId = createRequestId();
   const supabase = await createClient();

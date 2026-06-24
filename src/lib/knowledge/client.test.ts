@@ -12,6 +12,14 @@ test("knowledge client saves text documents through the server API", () => {
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY/);
 });
 
+test("knowledge client lists saved documents through the server API", () => {
+  const source = readFileSync(clientPath, "utf8");
+
+  assert.match(source, /listKnowledgeDocumentsFromClient/);
+  assert.match(source, /method:\s*"GET"/);
+  assert.match(source, /documents/);
+});
+
 test("knowledge client extracts PDF text through the server API", () => {
   const source = readFileSync(clientPath, "utf8");
 

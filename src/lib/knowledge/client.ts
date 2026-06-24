@@ -6,6 +6,32 @@ type SaveKnowledgeDocumentInput = {
   contentType?: string | null;
 };
 
+export type KnowledgeDocumentSummary = {
+  id: string;
+  title: string;
+  sourceKey: string | null;
+  sourceUrl: string | null;
+  contentType: string | null;
+  createdAt: string;
+};
+
+export async function listKnowledgeDocumentsFromClient() {
+  const response = await fetch("/api/knowledge/documents", {
+    method: "GET",
+  });
+
+  const body = (await response.json()) as {
+    documents?: KnowledgeDocumentSummary[];
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(body.error ?? "Could not load knowledge documents.");
+  }
+
+  return body.documents ?? [];
+}
+
 export async function saveKnowledgeDocumentFromClient(
   input: SaveKnowledgeDocumentInput,
 ) {
