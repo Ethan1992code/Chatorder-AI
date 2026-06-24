@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { saveKnowledgeDocumentFromClient } from "@/lib/knowledge/client";
 import { uploadFileToR2 } from "@/lib/storage/r2-client";
 
 type KnowledgeBasePanelProps = {
@@ -95,10 +96,19 @@ export function KnowledgeBasePanel({
 
           if (kind === "text") {
             const text = await file.text();
+            const savedDocument = await saveKnowledgeDocumentFromClient({
+              title: file.name,
+              content: text,
+              sourceKey: uploadResult.key,
+              sourceUrl: uploadResult.publicUrl,
+              contentType: file.type || extension,
+            });
+
             knowledgeParts.push(
               [
                 `Source: ${file.name}`,
                 `Stored in R2: ${uploadResult.publicUrl ?? uploadResult.key}`,
+                `Saved to RAG knowledge base: ${savedDocument.chunkCount ?? 0} chunks`,
                 text.trim(),
               ]
                 .filter(Boolean)

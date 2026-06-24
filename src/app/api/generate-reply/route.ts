@@ -6,6 +6,7 @@ import {
   releaseGenerateReply,
   reserveGenerateReply,
 } from "@/lib/services/ai-usage";
+import { buildRagQuery, retrieveKnowledgeContext } from "@/lib/services/rag";
 import { createClient } from "@/lib/supabase/server";
 import {
   customerStages,
@@ -300,6 +301,28 @@ export async function POST(request: Request) {
       );
     }
 
+    const ragQuery = buildRagQuery({
+      customerMessage: input.customerMessage,
+      productName: input.productName,
+      productInfo: input.productInfo,
+    });
+    const ragResult = await retrieveKnowledgeContext(user.id, ragQuery);
+    const inputWithRag = {
+      ...input,
+      businessContext: [input.businessContext, ragResult.context]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+
+    logger.info({
+      event: "rag_knowledge_retrieved",
+      status: "success",
+      message: "Retrieved saved knowledge chunks for reply generation.",
+      requestId,
+      userId,
+      ragChunkCount: ragResult.matches.length,
+    });
+
     const reservation = await reserveGenerateReply(user.id, requestId);
     if (!reservation.allowed) {
       return jsonResponse(
@@ -328,7 +351,7 @@ export async function POST(request: Request) {
           },
           {
             role: "user",
-            content: buildSalesReplyPrompt(input),
+            content: buildSalesReplyPrompt(inputWithRag),
           },
         ],
         response_format: { type: "json_object" },

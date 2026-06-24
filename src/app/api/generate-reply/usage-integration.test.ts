@@ -26,3 +26,12 @@ test("generate reply confirms successes and releases failed reservations", () =>
   assert.match(source, /confirmGenerateReply\(/);
   assert.match(source, /releaseGenerateReply\(/);
 });
+
+test("generate reply retrieves saved RAG context before building the AI prompt", () => {
+  const source = readFileSync(routePath, "utf8");
+  const retrievalIndex = source.indexOf("retrieveKnowledgeContext(");
+  const promptIndex = source.indexOf("buildSalesReplyPrompt(inputWithRag)");
+
+  assert.ok(retrievalIndex >= 0);
+  assert.ok(promptIndex > retrievalIndex);
+});
