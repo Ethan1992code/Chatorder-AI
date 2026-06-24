@@ -20,3 +20,14 @@ test("knowledge document route lists saved documents for the signed-in user", ()
   assert.match(source, /\.eq\("user_id", user\.id\)/);
   assert.match(source, /documents:/);
 });
+
+test("knowledge document route deletes only the signed-in user's document", () => {
+  const source = readFileSync(routePath, "utf8");
+
+  assert.match(source, /export async function DELETE/);
+  assert.match(source, /createAdminClient/);
+  assert.match(source, /\.delete\(\)/);
+  assert.match(source, /\.eq\("id", documentId\)/);
+  assert.match(source, /\.eq\("user_id", user\.id\)/);
+  assert.match(source, /rag_knowledge_delete_api_succeeded/);
+});

@@ -20,6 +20,14 @@ test("knowledge client lists saved documents through the server API", () => {
   assert.match(source, /documents/);
 });
 
+test("knowledge client deletes saved documents through the server API", () => {
+  const source = readFileSync(clientPath, "utf8");
+
+  assert.match(source, /deleteKnowledgeDocumentFromClient/);
+  assert.match(source, /method:\s*"DELETE"/);
+  assert.match(source, /encodeURIComponent\(documentId\)/);
+});
+
 test("knowledge client extracts PDF text through the server API", () => {
   const source = readFileSync(clientPath, "utf8");
 

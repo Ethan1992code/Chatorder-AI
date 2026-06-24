@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  deleteKnowledgeDocumentFromClient,
   extractPdfTextFromClient,
   listKnowledgeDocumentsFromClient,
   saveKnowledgeDocumentFromClient,
@@ -31,6 +32,7 @@ const supportedExtensions = [
 ];
 
 type UploadedAsset = {
+  id?: string;
   name: string;
   type: string;
   size?: number;
@@ -47,6 +49,7 @@ export function KnowledgeBasePanel({
   const [status, setStatus] = useState("");
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
 
   const characterCount = value.length;
   const hasNotes = value.trim().length > 0;
@@ -75,6 +78,7 @@ export function KnowledgeBasePanel({
 
         setAssets(
           documents.map((document) => ({
+            id: document.id,
             name: document.title,
             type: document.contentType ?? "",
             kind: getAssetKind(document.title, document.contentType),
@@ -129,15 +133,14 @@ export function KnowledgeBasePanel({
 
         try {
           const uploadResult = await uploadFileToR2(file);
-
-          addedAssets.push({
+          const uploadedAsset: UploadedAsset = {
             name: file.name,
             type: file.type || extension,
             size: file.size,
             kind,
             storageKey: uploadResult.key,
             publicUrl: uploadResult.publicUrl,
-          });
+          };
 
           if (kind === "text" || extension === ".pdf") {
             const text =
@@ -160,7 +163,10 @@ export function KnowledgeBasePanel({
             });
 
             savedRagChunks += savedDocument.chunkCount ?? 0;
+            uploadedAsset.id = savedDocument.documentId;
           }
+
+          addedAssets.push(uploadedAsset);
         } catch {
           failedUploads += 1;
         }
@@ -194,6 +200,31 @@ export function KnowledgeBasePanel({
   function clearKnowledge() {
     onChange("");
     setStatus("Background notes cleared. Uploaded knowledge files remain saved.");
+  }
+
+  async function deleteAsset(asset: UploadedAsset) {
+    if (!asset.id) {
+      setAssets((current) => current.filter((item) => item !== asset));
+      setStatus("Unsaved upload reference removed from this page.");
+      return;
+    }
+
+    setDeletingAssetId(asset.id);
+    setStatus(`Deleting ${asset.name}...`);
+
+    try {
+      await deleteKnowledgeDocumentFromClient(asset.id);
+      setAssets((current) => current.filter((item) => item.id !== asset.id));
+      setStatus(`${asset.name} deleted from saved knowledge.`);
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Could not delete knowledge file.",
+      );
+    } finally {
+      setDeletingAssetId(null);
+    }
   }
 
   return (
@@ -243,7 +274,7 @@ export function KnowledgeBasePanel({
               key={`${asset.name}-${index}`}
               className="flex items-center justify-between gap-3 rounded-lg border border-[#dce9e4] bg-[#fbfdfb] px-3 py-2"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-[#17231f]">
                   {asset.name}
                 </p>
@@ -262,6 +293,14 @@ export function KnowledgeBasePanel({
               <span className="rounded-lg bg-[#eaf7f0] px-2.5 py-1 text-xs font-semibold text-[#1f6f5b]">
                 Stored in R2
               </span>
+              <button
+                type="button"
+                disabled={deletingAssetId === asset.id}
+                onClick={() => deleteAsset(asset)}
+                className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#ffd6cc] bg-white px-2.5 text-xs font-semibold text-[#b84e37] transition hover:bg-[#fff2ed] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingAssetId === asset.id ? "Deleting..." : "Delete"}
+              </button>
             </div>
           ))}
         </div>

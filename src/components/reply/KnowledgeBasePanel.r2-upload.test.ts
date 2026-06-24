@@ -31,3 +31,12 @@ test("clearing background notes does not delete saved knowledge files", () => {
   assert.match(source, /Uploaded knowledge files remain saved/);
   assert.doesNotMatch(source, /setAssets\(\[\]\)/);
 });
+
+test("knowledge base lets users delete saved knowledge files", () => {
+  const source = readFileSync(panelPath, "utf8");
+
+  assert.match(source, /deleteKnowledgeDocumentFromClient/);
+  assert.match(source, /function deleteAsset/);
+  assert.match(source, /deleted from saved knowledge/);
+  assert.match(source, /"Delete"/);
+});

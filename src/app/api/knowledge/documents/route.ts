@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRequestId, logger } from "@/lib/logger";
 import { saveKnowledgeDocument } from "@/lib/services/rag";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -115,4 +116,68 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+export async function DELETE(request: Request) {
+  const requestId = createRequestId();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(request.url);
+  const documentId = url.searchParams.get("id")?.trim() ?? "";
+
+  if (!/^[0-9a-fA-F-]{36}$/.test(documentId)) {
+    return NextResponse.json(
+      { error: "A valid knowledge document ID is required." },
+      { status: 400 },
+    );
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("knowledge_documents")
+    .delete()
+    .eq("id", documentId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    logger.error({
+      event: "rag_knowledge_delete_api_failed",
+      status: "error",
+      message: "Could not delete knowledge document from the API.",
+      requestId,
+      userId: user.id,
+      error,
+    });
+
+    return NextResponse.json(
+      { error: "Could not delete knowledge document." },
+      { status: 500 },
+    );
+  }
+
+  if (!data) {
+    return NextResponse.json(
+      { error: "Knowledge document was not found." },
+      { status: 404 },
+    );
+  }
+
+  logger.info({
+    event: "rag_knowledge_delete_api_succeeded",
+    status: "success",
+    message: "Knowledge document deleted from the API.",
+    requestId,
+    userId: user.id,
+  });
+
+  return NextResponse.json({ deleted: true });
 }

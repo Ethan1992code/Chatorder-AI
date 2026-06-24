@@ -32,6 +32,26 @@ export async function listKnowledgeDocumentsFromClient() {
   return body.documents ?? [];
 }
 
+export async function deleteKnowledgeDocumentFromClient(documentId: string) {
+  const response = await fetch(
+    `/api/knowledge/documents?id=${encodeURIComponent(documentId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  const body = (await response.json()) as {
+    deleted?: boolean;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(body.error ?? "Could not delete knowledge document.");
+  }
+
+  return body;
+}
+
 export async function saveKnowledgeDocumentFromClient(
   input: SaveKnowledgeDocumentInput,
 ) {
