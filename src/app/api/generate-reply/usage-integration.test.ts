@@ -29,11 +29,18 @@ test("generate reply confirms successes and releases failed reservations", () =>
 
 test("generate reply retrieves saved RAG context before building the AI prompt", () => {
   const source = readFileSync(routePath, "utf8");
-  const retrievalIndex = source.indexOf("retrieveKnowledgeContext(");
+  const retrievalIndex = source.indexOf("retrieveComprehensiveKnowledgeContext(");
   const promptIndex = source.indexOf("buildSalesReplyPrompt(inputWithRag)");
 
   assert.ok(retrievalIndex >= 0);
   assert.ok(promptIndex > retrievalIndex);
+});
+
+test("generate reply logs matched and full RAG context counts", () => {
+  const source = readFileSync(routePath, "utf8");
+
+  assert.match(source, /ragMatchedChunkCount/);
+  assert.match(source, /ragFullContextChunkCount/);
 });
 
 test("generate reply returns short knowledge source snippets for debugging", () => {

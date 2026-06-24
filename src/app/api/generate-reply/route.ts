@@ -6,7 +6,10 @@ import {
   releaseGenerateReply,
   reserveGenerateReply,
 } from "@/lib/services/ai-usage";
-import { buildRagQuery, retrieveKnowledgeContext } from "@/lib/services/rag";
+import {
+  buildRagQuery,
+  retrieveComprehensiveKnowledgeContext,
+} from "@/lib/services/rag";
 import { createClient } from "@/lib/supabase/server";
 import {
   customerStages,
@@ -315,7 +318,10 @@ export async function POST(request: Request) {
       productName: input.productName,
       productInfo: input.productInfo,
     });
-    const ragResult = await retrieveKnowledgeContext(user.id, ragQuery);
+    const ragResult = await retrieveComprehensiveKnowledgeContext(
+      user.id,
+      ragQuery,
+    );
     const inputWithRag = {
       ...input,
       businessContext: [input.businessContext, ragResult.context]
@@ -330,6 +336,8 @@ export async function POST(request: Request) {
       requestId,
       userId,
       ragChunkCount: ragResult.matches.length,
+      ragMatchedChunkCount: ragResult.matchedCount,
+      ragFullContextChunkCount: ragResult.fullContextCount,
     });
 
     const reservation = await reserveGenerateReply(user.id, requestId);

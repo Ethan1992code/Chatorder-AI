@@ -6,6 +6,7 @@ const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 160;
 const MAX_CHUNKS_PER_DOCUMENT = 40;
 const DEFAULT_MATCH_LIMIT = 8;
+const FULL_CONTEXT_CHUNK_LIMIT = MAX_CHUNKS_PER_DOCUMENT;
 
 export type KnowledgeDocumentInput = {
   title: string;
@@ -23,7 +24,16 @@ export type KnowledgeChunkMatch = {
   rank: number;
 };
 
+type KnowledgeChunkRow = {
+  id: string;
+  document_id: string;
+  content: string;
+  chunk_index: number;
+  knowledge_documents: { title: string } | Array<{ title: string }> | null;
+};
+
 type InsertResult<T> = PromiseLike<{ data: T; error: unknown }>;
+type SelectResult<T> = PromiseLike<{ data: T; error: unknown }>;
 
 type RagDatabase = {
   from(table: "knowledge_documents"): {
@@ -35,6 +45,21 @@ type RagDatabase = {
   };
   from(table: "knowledge_chunks"): {
     insert(input: Array<Record<string, unknown>>): InsertResult<unknown>;
+    select(columns: string): {
+      eq(column: string, value: string): {
+        order(
+          column: string,
+          options?: { ascending?: boolean },
+        ): {
+          order(
+            column: string,
+            options?: { ascending?: boolean },
+          ): {
+            limit(count: number): SelectResult<KnowledgeChunkRow[] | null>;
+          };
+        };
+      };
+    };
   };
   rpc(
     name: "match_knowledge_chunks",
@@ -99,6 +124,30 @@ export function formatRagContext(matches: KnowledgeChunkMatch[]) {
         `[${index + 1}] ${match.title}\n${match.content.trim()}`,
     ),
   ].join("\n\n");
+}
+
+function titleFromRelation(
+  relation: KnowledgeChunkRow["knowledge_documents"],
+) {
+  if (Array.isArray(relation)) return relation[0]?.title ?? "Knowledge";
+  return relation?.title ?? "Knowledge";
+}
+
+function mergeKnowledgeMatches(
+  priorityMatches: KnowledgeChunkMatch[],
+  fallbackMatches: KnowledgeChunkMatch[],
+) {
+  const seen = new Set<string>();
+  const merged: KnowledgeChunkMatch[] = [];
+
+  for (const match of [...priorityMatches, ...fallbackMatches]) {
+    if (seen.has(match.chunk_id)) continue;
+
+    seen.add(match.chunk_id);
+    merged.push(match);
+  }
+
+  return merged;
 }
 
 export function createRagService(
@@ -211,9 +260,69 @@ export function createRagService(
     };
   }
 
+  async function retrieveFullKnowledgeContext(userId: string) {
+    if (!userId.trim()) {
+      return { matches: [], context: "" };
+    }
+
+    const { data, error } = await createDatabase()
+      .from("knowledge_chunks")
+      .select(
+        "id, document_id, content, chunk_index, knowledge_documents!inner(title)",
+      )
+      .eq("user_id", userId)
+      .order("document_id", { ascending: true })
+      .order("chunk_index", { ascending: true })
+      .limit(FULL_CONTEXT_CHUNK_LIMIT);
+
+    if (error) {
+      logger.error({
+        event: "rag_full_context_retrieval_failed",
+        status: "error",
+        message: "Could not retrieve full RAG knowledge context.",
+        userId,
+        error,
+      });
+      return { matches: [], context: "" };
+    }
+
+    const matches = (data ?? []).map((chunk) => ({
+      document_id: chunk.document_id,
+      chunk_id: chunk.id,
+      title: titleFromRelation(chunk.knowledge_documents),
+      content: chunk.content,
+      rank: 0,
+    }));
+
+    return {
+      matches,
+      context: formatRagContext(matches),
+    };
+  }
+
+  async function retrieveComprehensiveKnowledgeContext(
+    userId: string,
+    query: string,
+  ) {
+    const [matched, full] = await Promise.all([
+      retrieveKnowledgeContext(userId, query),
+      retrieveFullKnowledgeContext(userId),
+    ]);
+    const matches = mergeKnowledgeMatches(matched.matches, full.matches);
+
+    return {
+      matches,
+      context: formatRagContext(matches),
+      matchedCount: matched.matches.length,
+      fullContextCount: full.matches.length,
+    };
+  }
+
   return {
     saveKnowledgeDocument,
     retrieveKnowledgeContext,
+    retrieveFullKnowledgeContext,
+    retrieveComprehensiveKnowledgeContext,
   };
 }
 
@@ -223,3 +332,7 @@ const ragService = createRagService(
 
 export const saveKnowledgeDocument = ragService.saveKnowledgeDocument;
 export const retrieveKnowledgeContext = ragService.retrieveKnowledgeContext;
+export const retrieveFullKnowledgeContext =
+  ragService.retrieveFullKnowledgeContext;
+export const retrieveComprehensiveKnowledgeContext =
+  ragService.retrieveComprehensiveKnowledgeContext;
