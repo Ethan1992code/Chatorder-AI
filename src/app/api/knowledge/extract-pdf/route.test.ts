@@ -8,7 +8,7 @@ test("PDF extraction route requires auth and uses pdf-parse", () => {
   const source = readFileSync(routePath, "utf8");
 
   assert.match(source, /supabase\.auth\.getUser\(\)/);
-  assert.match(source, /PDFParse/);
+  assert.match(source, /pdfParse/);
   assert.match(source, /formData/);
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY.*formData/);
 });

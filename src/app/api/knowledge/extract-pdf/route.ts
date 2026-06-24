@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { NextResponse } from "next/server";
 import { createRequestId, logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
@@ -42,10 +42,7 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const parser = new PDFParse({ data: buffer });
-
-    try {
-      const result = await parser.getText();
+    const result = await pdfParse(buffer);
       const text = result.text.replace(/\s+/g, " ").trim();
 
       logger.info({
@@ -65,9 +62,6 @@ export async function POST(request: Request) {
         text: text.slice(0, MAX_EXTRACTED_TEXT_LENGTH),
         characters: text.length,
       });
-    } finally {
-      await parser.destroy();
-    }
   } catch (error) {
     logger.error({
       event: "rag_pdf_extract_failed",
