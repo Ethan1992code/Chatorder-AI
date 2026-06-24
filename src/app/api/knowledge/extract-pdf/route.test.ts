@@ -10,5 +10,7 @@ test("PDF extraction route requires auth and uses pdf-parse", () => {
   assert.match(source, /supabase\.auth\.getUser\(\)/);
   assert.match(source, /pdfParse/);
   assert.match(source, /formData/);
+  assert.match(source, /R2_PUBLIC_BASE_URL/);
+  assert.match(source, /sourceUrl/);
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY.*formData/);
 });

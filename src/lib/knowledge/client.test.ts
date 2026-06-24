@@ -17,4 +17,5 @@ test("knowledge client extracts PDF text through the server API", () => {
 
   assert.match(source, /\/api\/knowledge\/extract-pdf/);
   assert.match(source, /FormData/);
+  assert.match(source, /sourceUrl/);
 });

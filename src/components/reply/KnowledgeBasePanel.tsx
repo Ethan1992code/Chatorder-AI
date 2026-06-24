@@ -99,7 +99,8 @@ export function KnowledgeBasePanel({
           if (kind === "text" || extension === ".pdf") {
             const text =
               extension === ".pdf"
-                ? (await extractPdfTextFromClient(file)).text
+                ? (await extractPdfTextFromClient(file, uploadResult.publicUrl))
+                    .text
                 : await file.text();
 
             if (!text.trim()) {

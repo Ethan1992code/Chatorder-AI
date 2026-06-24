@@ -30,27 +30,33 @@ export async function saveKnowledgeDocumentFromClient(
   return body;
 }
 
-export async function extractPdfTextFromClient(file: File) {
-  const formData = new FormData();
-  formData.append("file", file);
+export async function extractPdfTextFromClient(file: File, sourceUrl?: string | null) {
+  const requestBody = sourceUrl
+    ? JSON.stringify({ sourceUrl })
+    : (() => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return formData;
+      })();
 
   const response = await fetch("/api/knowledge/extract-pdf", {
     method: "POST",
-    body: formData,
+    headers: sourceUrl ? { "Content-Type": "application/json" } : undefined,
+    body: requestBody,
   });
 
-  const body = (await response.json()) as {
+  const responseBody = (await response.json()) as {
     text?: string;
     characters?: number;
     error?: string;
   };
 
   if (!response.ok) {
-    throw new Error(body.error ?? "Could not extract PDF text.");
+    throw new Error(responseBody.error ?? "Could not extract PDF text.");
   }
 
   return {
-    text: body.text ?? "",
-    characters: body.characters ?? 0,
+    text: responseBody.text ?? "",
+    characters: responseBody.characters ?? 0,
   };
 }
